@@ -234,6 +234,21 @@ PORT_DEFAULTS = {
     "consensusnode": 1006,
 }
 
+QUIC_PORT_DEFAULTS = {
+    "coordinator": 1014,
+    "filenode": 1015,
+    "syncNode1": 1011,
+    "syncNode2": 1012,
+    "syncNode3": 1013,
+    "consensusnode": 1016,
+}
+
+# Services exposed externally via NodePort
+EXTERNAL_SERVICES = {
+    "syncNode1", "syncNode2", "syncNode3",
+    "coordinator", "filenode", "consensusnode",
+}
+
 
 def templatize_ports(data, value_key):
     """Replace hardcoded port numbers in container specs with {{ .Values }} references."""
@@ -255,6 +270,11 @@ def templatize_ports(data, value_key):
         for port_entry in container.get("ports", []):
             if port_entry.get("containerPort") == default_port:
                 port_entry["containerPort"] = port_ref
+            # QUIC port
+            if value_key in QUIC_PORT_DEFAULTS:
+                quic_default = QUIC_PORT_DEFAULTS[value_key]
+                if port_entry.get("containerPort") == quic_default:
+                    port_entry["containerPort"] = f'{{{{ .Values.{value_key}.quicPort }}}}'
 
         # Command args (e.g. mongo --port 27001)
         args = container.get("args", [])
@@ -279,20 +299,48 @@ def templatize_ports(data, value_key):
 
 
 def templatize_service_ports(data, value_key):
-    """Replace hardcoded port numbers in Service specs with {{ .Values }} references."""
+    """Replace hardcoded port numbers in Service specs with {{ .Values }} refs.
+
+    For externally-exposed any-sync services, also:
+    - Set type: NodePort
+    - Add nodePort fields
+    - Templatize QUIC ports
+    """
     if value_key not in PORT_DEFAULTS:
         return
 
     default_port = PORT_DEFAULTS[value_key]
     port_ref = f'{{{{ .Values.{value_key}.port }}}}'
 
+    is_external = value_key in EXTERNAL_SERVICES
+
+    if is_external:
+        data["spec"]["type"] = "NodePort"
+
     for port_entry in data.get("spec", {}).get("ports", []):
-        if port_entry.get("port") == default_port:
+        # TCP port
+        if port_entry.get("port") == default_port or port_entry.get("name") == str(default_port):
+            port_entry["name"] = f'{value_key}-tcp'
             port_entry["port"] = port_ref
-        if port_entry.get("targetPort") == default_port:
             port_entry["targetPort"] = port_ref
-        if port_entry.get("name") == str(default_port):
-            port_entry["name"] = port_ref
+            if is_external:
+                port_entry["nodePort"] = f'{{{{ .Values.{value_key}.nodePort }}}}'
+        elif port_entry.get("targetPort") == default_port:
+            port_entry["targetPort"] = port_ref
+            if port_entry.get("port") == default_port:
+                port_entry["port"] = port_ref
+
+        # QUIC port
+        if value_key in QUIC_PORT_DEFAULTS:
+            quic_default = QUIC_PORT_DEFAULTS[value_key]
+            if port_entry.get("port") == quic_default or port_entry.get("name") == str(quic_default):
+                quic_ref = f'{{{{ .Values.{value_key}.quicPort }}}}'
+                port_entry["name"] = f'{value_key}-quic'
+                port_entry["port"] = quic_ref
+                port_entry["targetPort"] = quic_ref
+                if is_external:
+                    port_entry["nodePort"] = f'{{{{ .Values.{value_key}.quicNodePort }}}}'
+
 
 
 # ---------------------------------------------------------------------------
@@ -431,6 +479,8 @@ def generate_values(env_example_path):
             "image": IMAGE_DEFAULTS["coordinator"],
             "port": 1004,
             "quicPort": 1014,
+            "nodePort": 30004,
+            "quicNodePort": 30014,
             "limits": {
                 "spaceMembersRead": 1000,
                 "spaceMembersWrite": 1000,
@@ -443,6 +493,8 @@ def generate_values(env_example_path):
             "image": IMAGE_DEFAULTS["filenode"],
             "port": 1005,
             "quicPort": 1015,
+            "nodePort": 30005,
+            "quicNodePort": 30015,
             "defaultLimit": 1099511627776,
             "resources": {"limits": {"memory": "500M"}},
             "persistence": {"size": "1Gi", "storageClass": ""},
@@ -451,6 +503,8 @@ def generate_values(env_example_path):
             "image": IMAGE_DEFAULTS["syncNode1"],
             "port": 1001,
             "quicPort": 1011,
+            "nodePort": 30001,
+            "quicNodePort": 30011,
             "resources": {"limits": {"memory": "500M"}},
             "persistence": {"size": "10Gi", "storageClass": ""},
         },
@@ -458,6 +512,8 @@ def generate_values(env_example_path):
             "image": IMAGE_DEFAULTS["syncNode2"],
             "port": 1002,
             "quicPort": 1012,
+            "nodePort": 30002,
+            "quicNodePort": 30012,
             "resources": {"limits": {"memory": "500M"}},
             "persistence": {"size": "10Gi", "storageClass": ""},
         },
@@ -465,6 +521,8 @@ def generate_values(env_example_path):
             "image": IMAGE_DEFAULTS["syncNode3"],
             "port": 1003,
             "quicPort": 1013,
+            "nodePort": 30003,
+            "quicNodePort": 30013,
             "resources": {"limits": {"memory": "500M"}},
             "persistence": {"size": "10Gi", "storageClass": ""},
         },
@@ -472,6 +530,8 @@ def generate_values(env_example_path):
             "image": IMAGE_DEFAULTS["consensusnode"],
             "port": 1006,
             "quicPort": 1016,
+            "nodePort": 30006,
+            "quicNodePort": 30016,
             "resources": {"limits": {"memory": "500M"}},
             "persistence": {"size": "1Gi", "storageClass": ""},
         },
@@ -492,12 +552,6 @@ def generate_values(env_example_path):
             "image": {
                 "repository": "bitnami/kubectl",
                 "tag": "latest",
-            },
-        },
-        "ingress": {
-            "type": "none",  # none | traefik | nginx | haproxy
-            "nginx": {
-                "configMapNamespace": "",  # set if nginx controller is in a different namespace
             },
         },
     }

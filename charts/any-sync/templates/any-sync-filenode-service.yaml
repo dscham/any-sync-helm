@@ -8,15 +8,18 @@ metadata:
   name: any-sync-filenode
 spec:
   ports:
-  - name: '{{ .Values.filenode.port }}'
+  - name: filenode-tcp
     port: '{{ .Values.filenode.port }}'
     targetPort: '{{ .Values.filenode.port }}'
-  - name: '1015'
-    port: 1015
+    nodePort: '{{ .Values.filenode.nodePort }}'
+  - name: filenode-quic
+    port: '{{ .Values.filenode.quicPort }}'
     protocol: UDP
-    targetPort: 1015
+    targetPort: '{{ .Values.filenode.quicPort }}'
+    nodePort: '{{ .Values.filenode.quicNodePort }}'
   - name: '8005'
     port: 8005
     targetPort: 8000
   selector:
     io.kompose.service: any-sync-filenode
+  type: NodePort

@@ -27,7 +27,7 @@ spec:
         ports:
         - containerPort: '{{ .Values.syncNode1.port }}'
           protocol: TCP
-        - containerPort: 1011
+        - containerPort: '{{ .Values.syncNode1.quicPort }}'
           protocol: UDP
         - containerPort: 8080
           protocol: TCP

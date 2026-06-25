@@ -27,7 +27,7 @@ spec:
         ports:
         - containerPort: '{{ .Values.filenode.port }}'
           protocol: TCP
-        - containerPort: 1015
+        - containerPort: '{{ .Values.filenode.quicPort }}'
           protocol: UDP
         - containerPort: 8000
           protocol: TCP

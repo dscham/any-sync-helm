@@ -8,15 +8,18 @@ metadata:
   name: any-sync-consensusnode
 spec:
   ports:
-  - name: '{{ .Values.consensusnode.port }}'
+  - name: consensusnode-tcp
     port: '{{ .Values.consensusnode.port }}'
     targetPort: '{{ .Values.consensusnode.port }}'
-  - name: '1016'
-    port: 1016
+    nodePort: '{{ .Values.consensusnode.nodePort }}'
+  - name: consensusnode-quic
+    port: '{{ .Values.consensusnode.quicPort }}'
     protocol: UDP
-    targetPort: 1016
+    targetPort: '{{ .Values.consensusnode.quicPort }}'
+    nodePort: '{{ .Values.consensusnode.quicNodePort }}'
   - name: '8006'
     port: 8006
     targetPort: 8000
   selector:
     io.kompose.service: any-sync-consensusnode
+  type: NodePort

@@ -8,13 +8,15 @@ metadata:
   name: any-sync-node-1
 spec:
   ports:
-  - name: '{{ .Values.syncNode1.port }}'
+  - name: syncNode1-tcp
     port: '{{ .Values.syncNode1.port }}'
     targetPort: '{{ .Values.syncNode1.port }}'
-  - name: '1011'
-    port: 1011
+    nodePort: '{{ .Values.syncNode1.nodePort }}'
+  - name: syncNode1-quic
+    port: '{{ .Values.syncNode1.quicPort }}'
     protocol: UDP
-    targetPort: 1011
+    targetPort: '{{ .Values.syncNode1.quicPort }}'
+    nodePort: '{{ .Values.syncNode1.quicNodePort }}'
   - name: '8081'
     port: 8081
     targetPort: 8080
@@ -23,3 +25,4 @@ spec:
     targetPort: 8000
   selector:
     io.kompose.service: any-sync-node-1
+  type: NodePort

@@ -55,6 +55,22 @@ spec:
               echo "INFO: Running init.sh..."
               cd /code
               bash /code/docker-generateconfig/init.sh
+
+              echo "INFO: Patching external addresses with NodePort numbers..."
+              HOSTNAME="{{ .Values.externalHostname }}"
+              if [ -n "$HOSTNAME" ] && [ -f /code/etc/client.yml ]; then
+                # Map internal ports to NodePorts for external addresses
+                {{- range $svc := list "syncNode1" "syncNode2" "syncNode3" "coordinator" "filenode" "consensusnode" }}
+                INT_PORT={{ index $.Values $svc "port" }}
+                NODE_PORT={{ index $.Values $svc "nodePort" }}
+                QUIC_INT={{ index $.Values $svc "quicPort" }}
+                QUIC_NODE={{ index $.Values $svc "quicNodePort" }}
+                # Replace externalHostname:internalPort with externalHostname:nodePort
+                sed -i "s|${HOSTNAME}:${INT_PORT}|${HOSTNAME}:${NODE_PORT}|g" /code/etc/client.yml
+                sed -i "s|${HOSTNAME}:${QUIC_INT}|${HOSTNAME}:${QUIC_NODE}|g" /code/etc/client.yml
+                {{- end }}
+                echo "INFO: External addresses patched."
+              fi
           volumeMounts:
             - name: env-file
               mountPath: /code/.env

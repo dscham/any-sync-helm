@@ -8,15 +8,18 @@ metadata:
   name: any-sync-coordinator
 spec:
   ports:
-  - name: '{{ .Values.coordinator.port }}'
+  - name: coordinator-tcp
     port: '{{ .Values.coordinator.port }}'
     targetPort: '{{ .Values.coordinator.port }}'
-  - name: '1014'
-    port: 1014
+    nodePort: '{{ .Values.coordinator.nodePort }}'
+  - name: coordinator-quic
+    port: '{{ .Values.coordinator.quicPort }}'
     protocol: UDP
-    targetPort: 1014
+    targetPort: '{{ .Values.coordinator.quicPort }}'
+    nodePort: '{{ .Values.coordinator.quicNodePort }}'
   - name: '8004'
     port: 8004
     targetPort: 8000
   selector:
     io.kompose.service: any-sync-coordinator
+  type: NodePort
