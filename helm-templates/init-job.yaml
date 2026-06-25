@@ -44,6 +44,7 @@ spec:
               echo "INFO: Dependencies installed."
 
               # Copy scripts from ConfigMap to working directory
+              mkdir -p /code/docker-generateconfig
               cp /scripts/init.sh /code/docker-generateconfig/init.sh
               cp /scripts/setListenIp.py /code/docker-generateconfig/setListenIp.py
               chmod +x /code/docker-generateconfig/init.sh
