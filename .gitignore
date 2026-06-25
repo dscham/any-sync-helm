@@ -7,3 +7,5 @@
 /.env.override
 /account_stop.json
 /backup/
+kompose.exe
+/.tmp-chart/

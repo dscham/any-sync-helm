@@ -1,0 +1,88 @@
+{{/*
+Init Job — generates cryptographic keys and node configuration.
+Uses the published any-sync-tools image with scripts mounted as ConfigMaps.
+No custom image build required.
+*/}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "any-sync.fullname" . }}-init
+  labels:
+    {{- include "any-sync.labels" . | nindent 4 }}
+    app.kubernetes.io/name: any-sync-init
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-5"
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: any-sync-init
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: init
+          image: {{ .Values.init.image.repository }}:{{ .Values.init.image.tag }}
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+              echo "INFO: Installing runtime dependencies..."
+              apt-get update -qq
+              apt-get install -y -qq --no-install-recommends \
+                bash curl ca-certificates perl python3 python3-yaml python-is-python3 > /dev/null 2>&1
+              ARCH=$(dpkg --print-architecture)
+              curl -sL "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${ARCH}" \
+                -o /usr/local/bin/yq
+              chmod +x /usr/local/bin/yq
+              echo "INFO: Dependencies installed."
+
+              # Copy scripts from ConfigMap to working directory
+              cp /scripts/init.sh /code/docker-generateconfig/init.sh
+              cp /scripts/setListenIp.py /code/docker-generateconfig/setListenIp.py
+              chmod +x /code/docker-generateconfig/init.sh
+
+              # Copy config templates
+              mkdir -p /code/docker-generateconfig/etc
+              for f in common.yml coordinator.yml filenode.yml consensusnode.yml node-1.yml node-2.yml node-3.yml aws-credentials; do
+                cp "/config-templates/$f" "/code/docker-generateconfig/etc/$f"
+              done
+
+              echo "INFO: Running init.sh..."
+              cd /code
+              bash /code/docker-generateconfig/init.sh
+          volumeMounts:
+            - name: env-file
+              mountPath: /code/.env
+              subPath: .env
+              readOnly: true
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+            - name: config-templates
+              mountPath: /config-templates
+              readOnly: true
+            - name: storage
+              mountPath: /code/storage/docker-generateconfig
+            - name: etc-output
+              mountPath: /code/etc
+      volumes:
+        - name: env-file
+          configMap:
+            name: any-sync-init-cm0
+        - name: scripts
+          configMap:
+            name: {{ include "any-sync.fullname" . }}-init-scripts
+        - name: config-templates
+          configMap:
+            name: {{ include "any-sync.fullname" . }}-init-config-templates
+        - name: storage
+          persistentVolumeClaim:
+            claimName: any-sync-init-claim3
+        - name: etc-output
+          persistentVolumeClaim:
+            claimName: any-sync-init-claim2

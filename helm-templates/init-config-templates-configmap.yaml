@@ -1,0 +1,253 @@
+{{/*
+ConfigMap containing the node configuration templates from docker-generateconfig/etc/.
+These are mounted into the init Job and used by init.sh to generate final configs.
+*/}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "any-sync.fullname" . }}-init-config-templates
+  labels:
+    {{- include "any-sync.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-10"
+    helm.sh/hook-delete-policy: before-hook-creation
+data:
+  common.yml: |
+    metric:
+        addr: 0.0.0.0:8000
+
+    log:
+        defaultLevel: ''
+        namedLevels: {}
+        production: false
+    networkStorePath: "/networkStore"
+
+  coordinator.yml: |
+    mongo:
+        connect: %MONGO_CONNECT%
+        database: coordinator
+        log: log
+        spaces: spaces
+
+    spaceStatus:
+        runSeconds: 5
+        deletionPeriodDays: 0
+
+    drpc:
+      stream:
+        timeoutMilliseconds: 1000
+        maxMsgSizeMb: 256
+
+    yamux:
+        listenAddrs:
+            - %ANY_SYNC_COORDINATOR_ADDRESSES%
+        writeTimeoutSec: 10
+        dialTimeoutSec: 10
+
+    quic:
+        listenAddrs:
+            - %ANY_SYNC_COORDINATOR_QUIC_ADDRESSES%
+        writeTimeoutSec: 10
+        dialTimeoutSec: 10
+
+    defaultLimits:
+        spaceMembersRead: %ANY_SYNC_COORDINATOR_DEFAULT_LIMITS_SPACE_MEMBERS_READ%
+        spaceMembersWrite: %ANY_SYNC_COORDINATOR_DEFAULT_LIMITS_SPACE_MEMBERS_WRITE%
+        sharedSpacesLimit: %ANY_SYNC_COORDINATOR_DEFAULT_LIMITS_SHARED_SPACES_LIMIT%
+
+  filenode.yml: |
+    s3Store:
+        bucket: %MINIO_BUCKET%
+        indexBucket: %MINIO_BUCKET%
+        maxThreads: 16
+        profile: default
+        region: us-east-1
+        endpoint: http://minio:%MINIO_PORT%
+        forcePathStyle: true
+
+    redis:
+        isCluster: false
+        url: %REDIS_URL%
+
+    drpc:
+      stream:
+        timeoutMilliseconds: 1000
+        maxMsgSizeMb: 256
+
+    yamux:
+        listenAddrs:
+            - %ANY_SYNC_FILENODE_ADDRESSES%
+        writeTimeoutSec: 10
+        dialTimeoutSec: 10
+
+    quic:
+        listenAddrs:
+            - %ANY_SYNC_FILENODE_QUIC_ADDRESSES%
+        writeTimeoutSec: 10
+        dialTimeoutSec: 10
+
+    defaultLimit: %ANY_SYNC_FILENODE_DEFAULT_LIMIT%
+
+  consensusnode.yml: |
+    mongo:
+        connect: %MONGO_CONNECT%/?w=majority
+        database: consensus
+        logCollection: log
+
+    drpc:
+      stream:
+        timeoutMilliseconds: 1000
+        maxMsgSizeMb: 256
+
+    yamux:
+        listenAddrs:
+            - %ANY_SYNC_CONSENSUSNODE_ADDRESSES%
+        writeTimeoutSec: 10
+        dialTimeoutSec: 10
+
+    quic:
+        listenAddrs:
+            - %ANY_SYNC_CONSENSUSNODE_QUIC_ADDRESSES%
+        writeTimeoutSec: 10
+        dialTimeoutSec: 10
+
+  node-1.yml: |
+    apiServer:
+        listenAddr: 0.0.0.0:8080
+
+    drpc:
+      stream:
+        timeoutMilliseconds: 1000
+        maxMsgSizeMb: 256
+
+    yamux:
+        listenAddrs:
+            - %ANY_SYNC_NODE_1_ADDRESSES%
+        writeTimeoutSec: 10
+        dialTimeoutSec: 10
+    quic:
+        listenAddrs:
+            - %ANY_SYNC_NODE_1_QUIC_ADDRESSES%
+        writeTimeoutSec: 10
+        dialTimeoutSec: 10
+
+    space:
+        gcTTL: 60
+        syncPeriod: 600
+
+    storage:
+        path: /storage
+        anyStorePath: /anyStorage
+
+    nodeSync:
+        periodicSyncHours: 2
+        syncOnStart: true
+
+    s3Store:
+        enabled: false
+        region: us-east-1
+        endpoint: http://minio:%MINIO_PORT%
+        bucket: %MINIO_BUCKET%
+        keyPrefix: "node_storage/node-1"
+        forcePathStyle: true
+
+    archive:
+        enabled: false
+        archiveAfterDays: 1
+        checkPeriodMinutes: 2
+
+  node-2.yml: |
+    apiServer:
+        listenAddr: 0.0.0.0:8080
+
+    drpc:
+      stream:
+        timeoutMilliseconds: 1000
+        maxMsgSizeMb: 256
+
+    yamux:
+        listenAddrs:
+            - %ANY_SYNC_NODE_2_ADDRESSES%
+        writeTimeoutSec: 10
+        dialTimeoutSec: 10
+    quic:
+        listenAddrs:
+            - %ANY_SYNC_NODE_2_QUIC_ADDRESSES%
+        writeTimeoutSec: 10
+        dialTimeoutSec: 10
+
+    space:
+        gcTTL: 60
+        syncPeriod: 600
+
+    storage:
+        path: /storage
+        anyStorePath: /anyStorage
+
+    nodeSync:
+        periodicSyncHours: 2
+        syncOnStart: true
+
+    s3Store:
+        enabled: false
+        region: us-east-1
+        endpoint: http://minio:%MINIO_PORT%
+        bucket: %MINIO_BUCKET%
+        keyPrefix: "node_storage/node-2"
+        forcePathStyle: true
+
+    archive:
+        enabled: false
+        archiveAfterDays: 1
+        checkPeriodMinutes: 2
+
+  node-3.yml: |
+    apiServer:
+        listenAddr: 0.0.0.0:8080
+
+    drpc:
+      stream:
+        timeoutMilliseconds: 1000
+        maxMsgSizeMb: 256
+
+    yamux:
+        listenAddrs:
+            - %ANY_SYNC_NODE_3_ADDRESSES%
+        writeTimeoutSec: 10
+        dialTimeoutSec: 10
+    quic:
+        listenAddrs:
+            - %ANY_SYNC_NODE_3_QUIC_ADDRESSES%
+        writeTimeoutSec: 10
+        dialTimeoutSec: 10
+
+    space:
+        gcTTL: 60
+        syncPeriod: 600
+
+    storage:
+        path: /storage
+        anyStorePath: /anyStorage
+
+    nodeSync:
+        periodicSyncHours: 2
+        syncOnStart: true
+
+    s3Store:
+        enabled: false
+        region: us-east-1
+        endpoint: http://minio:%MINIO_PORT%
+        bucket: %MINIO_BUCKET%
+        keyPrefix: "node_storage/node-3"
+        forcePathStyle: true
+
+    archive:
+        enabled: false
+        archiveAfterDays: 1
+        checkPeriodMinutes: 2
+
+  aws-credentials: |
+    [default]
+    aws_access_key_id=%AWS_ACCESS_KEY_ID%
+    aws_secret_access_key=%AWS_SECRET_ACCESS_KEY%

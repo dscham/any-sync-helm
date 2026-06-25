@@ -78,7 +78,7 @@ IMAGE_DEFAULTS = {
     "syncNode3": {"repository": "ghcr.io/anyproto/any-sync-node", "tag": "v0.11.1"},
     "consensusnode": {"repository": "ghcr.io/anyproto/any-sync-consensusnode", "tag": "v0.7.2"},
     "netcheck": {"repository": "ghcr.io/anyproto/any-sync-tools", "tag": "latest"},
-    "init": {"repository": "any-sync-init", "tag": "latest"},
+    "init": {"repository": "ghcr.io/anyproto/any-sync-tools", "tag": "latest"},
     "coordinatorBootstrap": {"repository": "ghcr.io/anyproto/any-sync-coordinator", "tag": "v0.9.1"},
     "createBucket": {"repository": "minio/mc", "tag": "latest"},
 }
@@ -487,7 +487,16 @@ def process(input_dir, output_dir, env_example_path):
             print(f"  Service (headless): {out_name}")
 
     # --- Process Jobs ---
+    # Skip any-sync-init: we have a hand-crafted init-job.yaml that uses
+    # the published any-sync-tools image with scripts mounted as ConfigMaps
+    SKIP_JOBS = {"any-sync-init"}
+
     for svc_name, hook_config in JOB_SERVICES.items():
+        if svc_name in SKIP_JOBS:
+            pods.pop(svc_name, None)
+            print(f"  Job: {svc_name} — skipped (hand-crafted template)")
+            continue
+
         if svc_name not in pods:
             print(f"  WARN: {svc_name} pod not found, skipping Job conversion")
             continue
