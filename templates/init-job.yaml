@@ -23,7 +23,8 @@ spec:
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       restartPolicy: OnFailure
-      containers:
+      serviceAccountName: {{ include "any-sync.fullname" . }}-init
+      initContainers:
         - name: init
           image: {{ .Values.init.image.repository }}:{{ .Values.init.image.tag }}
           command:
@@ -86,6 +87,42 @@ spec:
               mountPath: /code/storage/docker-generateconfig
             - name: etc-output
               mountPath: /code/etc
+      containers:
+        - name: create-secret
+          image: {{ .Values.exportClientConfig.image.repository }}:{{ .Values.exportClientConfig.image.tag }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "INFO: Storing generated configuration into Secret..."
+              
+              # Flatten the configs for easier secret projection
+              cp /code/etc/any-sync-node-1/config.yml /code/etc/node-1.yml
+              cp /code/etc/any-sync-node-2/config.yml /code/etc/node-2.yml
+              cp /code/etc/any-sync-node-3/config.yml /code/etc/node-3.yml
+              cp /code/etc/any-sync-coordinator/config.yml /code/etc/coordinator.yml
+              cp /code/etc/any-sync-coordinator/network.yml /code/etc/network.yml
+              cp /code/etc/any-sync-filenode/config.yml /code/etc/filenode.yml
+              cp /code/etc/any-sync-consensusnode/config.yml /code/etc/consensusnode.yml
+              
+              kubectl create secret generic {{ include "any-sync.fullname" . }}-network-configs \
+                --from-file=client.yml=/code/etc/client.yml \
+                --from-file=node-1.yml=/code/etc/node-1.yml \
+                --from-file=node-2.yml=/code/etc/node-2.yml \
+                --from-file=node-3.yml=/code/etc/node-3.yml \
+                --from-file=coordinator.yml=/code/etc/coordinator.yml \
+                --from-file=network.yml=/code/etc/network.yml \
+                --from-file=filenode.yml=/code/etc/filenode.yml \
+                --from-file=consensusnode.yml=/code/etc/consensusnode.yml \
+                --from-file=aws-credentials=/code/etc/.aws/credentials \
+                --dry-run=client -o yaml | kubectl apply -f -
+                
+              echo "INFO: Secret {{ include "any-sync.fullname" . }}-network-configs successfully created."
+          volumeMounts:
+            - name: storage
+              mountPath: /code/storage/docker-generateconfig
+            - name: etc-output
+              mountPath: /code/etc
       volumes:
         - name: env-file
           configMap:
@@ -97,8 +134,6 @@ spec:
           configMap:
             name: {{ include "any-sync.fullname" . }}-init-config-templates
         - name: storage
-          persistentVolumeClaim:
-            claimName: any-sync-init-claim3
+          emptyDir: {}
         - name: etc-output
-          persistentVolumeClaim:
-            claimName: any-sync-init-claim2
+          emptyDir: {}

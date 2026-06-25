@@ -22,23 +22,22 @@ Point the DNS record for `anytype.example.com` at any of your cluster node IPs.
 
 The chart replicates the full setup flow of the upstream docker-compose project:
 
-1. **Init Job** (pre-install) — generates crypto keys, node configuration files, and `client.yml` using the official `any-sync-tools` image. Scripts and config templates are mounted from ConfigMaps — no custom image build needed.
+1. **Init Job** (pre-install) — generates crypto keys, node configuration files, and `client.yml` using the official `any-sync-tools` image. Packages everything into a Kubernetes Secret.
 2. **MongoDB replica set** — starts with `--replSet` and a liveness probe that automatically runs `rs.initiate()` on first boot.
 3. **MinIO bucket creation** (post-install) — creates the S3 bucket for file storage.
 4. **Coordinator bootstrap** (post-install) — registers the network configuration with the coordinator.
-5. **Client config export** (post-install) — parses the generated `client.yml` and stores it as a ConfigMap for easy retrieval.
-6. **All sync services start** — coordinator, consensus node, file node, and 3 sync nodes.
+5. **All sync services start** — coordinator, consensus node, file node, and 3 sync nodes (mounting their configs from the Secret).
 
 ### Retrieving the Client Config
 
 After install, retrieve the `client.yml` to configure your Anytype apps:
 
 ```bash
-# From the ConfigMap (persisted)
-kubectl get configmap <release>-any-sync-client-config -o jsonpath='{.data.client\.yml}'
+# Extract from the Secret (base64 decoded)
+kubectl get secret <release>-any-sync-network-configs -o jsonpath='{.data.client\.yml}' | base64 -d
 
-# Or from the export job logs
-kubectl logs job/<release>-any-sync-export-client-config
+# Or from the init job logs
+kubectl logs job/<release>-any-sync-init -c create-secret
 ```
 
 Import this file in your Anytype app under **Settings → Data Management → Self-Hosted**.
@@ -197,14 +196,14 @@ Replace `N` with `1`, `2`, or `3` (keys: `syncNode1`, `syncNode2`, `syncNode3`).
 │                    Helm pre-install hooks                     │
 │  ┌──────────────┐                                            │
 │  │  any-sync-init│ generates crypto keys + node configs      │
-│  │  (Job)        │ → writes to shared PVCs                   │
+│  │  (Job)        │ → writes to Kubernetes Secret             │
 │  └──────────────┘                                            │
 ├───────────────────────────────────────────────────────────────┤
 │                    Helm post-install hooks                    │
-│  ┌────────────────────┐  ┌──────────────┐  ┌───────────────┐ │
-│  │coordinator-bootstrap│  │ create-bucket │  │export-client  │ │
-│  │(Job)                │  │ (Job)         │  │-config (Job)  │ │
-│  └────────────────────┘  └──────────────┘  └───────────────┘ │
+│  ┌────────────────────┐  ┌──────────────┐                     │
+│  │coordinator-bootstrap│  │ create-bucket │                     │
+│  │(Job)                │  │ (Job)         │                     │
+│  └────────────────────┘  └──────────────┘                     │
 ├───────────────────────────────────────────────────────────────┤
 │          Core Services (NodePort: 30001–30016)               │
 │  ┌────────────┐ ┌────────────┐ ┌────────────┐               │

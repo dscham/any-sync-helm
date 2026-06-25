@@ -34,23 +34,23 @@ spec:
         resources:
           limits:
             memory: '{{ .Values.filenode.resources.limits.memory }}'
+          requests:
+            memory: '{{ .Values.filenode.resources.requests.memory }}'
         volumeMounts:
-        - mountPath: /etc/any-sync-filenode
-          name: any-sync-filenode-claim0
-        - mountPath: /root/.aws
-          name: any-sync-filenode-claim1
+        - mountPath: /etc/any-sync-filenode/config.yml
+          name: network-configs
+          subPath: filenode.yml
+        - mountPath: /root/.aws/credentials
+          name: network-configs
           readOnly: true
+          subPath: aws-credentials
         - mountPath: /networkStore
           name: any-sync-filenode-claim2
       restartPolicy: Always
       volumes:
-      - name: any-sync-filenode-claim0
-        persistentVolumeClaim:
-          claimName: any-sync-filenode-claim0
-      - name: any-sync-filenode-claim1
-        persistentVolumeClaim:
-          claimName: any-sync-filenode-claim1
-          readOnly: true
       - name: any-sync-filenode-claim2
         persistentVolumeClaim:
           claimName: any-sync-filenode-claim2
+      - name: network-configs
+        secret:
+          secretName: '{{ include "any-sync.fullname" . }}-network-configs'

@@ -34,16 +34,19 @@ spec:
         resources:
           limits:
             memory: '{{ .Values.consensusnode.resources.limits.memory }}'
+          requests:
+            memory: '{{ .Values.consensusnode.resources.requests.memory }}'
         volumeMounts:
-        - mountPath: /etc/any-sync-consensusnode
-          name: any-sync-consensusnode-claim0
+        - mountPath: /etc/any-sync-consensusnode/config.yml
+          name: network-configs
+          subPath: consensusnode.yml
         - mountPath: /networkStore
           name: any-sync-consensusnode-claim1
       restartPolicy: Always
       volumes:
-      - name: any-sync-consensusnode-claim0
-        persistentVolumeClaim:
-          claimName: any-sync-consensusnode-claim0
       - name: any-sync-consensusnode-claim1
         persistentVolumeClaim:
           claimName: any-sync-consensusnode-claim1
+      - name: network-configs
+        secret:
+          secretName: '{{ include "any-sync.fullname" . }}-network-configs'
