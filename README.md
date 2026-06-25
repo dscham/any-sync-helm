@@ -75,6 +75,7 @@ The init job automatically patches `client.yml` so that external addresses use t
 | Value | Default | Description |
 |---|---|---|
 | `externalHostname` | `""` (**required**) | External FQDN or IP for client connections |
+| `maxMsgSizeMb` | `256` | GRPC/Yamux max message size. Increase this if you need to upload very large files. |
 
 ### MongoDB
 

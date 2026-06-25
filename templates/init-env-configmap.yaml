@@ -94,3 +94,4 @@ data:
     # Resource limits
     STORAGE_DIR="./storage"
     ANY_SYNC_DAEMONS_MEMORY_LIMIT=500M
+    ANY_SYNC_MAX_MSG_SIZE_MB={{ .Values.maxMsgSizeMb }}

@@ -1,4 +1,5 @@
 externalHostname: ''
+maxMsgSizeMb: 256
 mongo:
   image:
     repository: mongo
