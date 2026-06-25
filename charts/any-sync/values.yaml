@@ -27,12 +27,12 @@ minio:
   accessKey: minio_access_key
   secretKey: minio_secret_key
   persistence:
-    size: 50Gi
+    size: 120Gi
     storageClass: ''
 coordinator:
   image:
     repository: ghcr.io/anyproto/any-sync-coordinator
-    tag: v0.9.1
+    tag: latest
   port: 1004
   quicPort: 1014
   nodePort: 30004
@@ -43,78 +43,90 @@ coordinator:
     sharedSpacesLimit: 1000
   resources:
     limits:
-      memory: 500M
+      memory: 1.5Gi
+    requests:
+      memory: 1.5Gi
   persistence:
     size: 1Gi
     storageClass: ''
 filenode:
   image:
     repository: ghcr.io/anyproto/any-sync-filenode
-    tag: v0.11.1
+    tag: latest
   port: 1005
   quicPort: 1015
   nodePort: 30005
   quicNodePort: 30015
-  defaultLimit: 1099511627776
+  defaultLimit: 107374182400
   resources:
     limits:
-      memory: 500M
+      memory: 1.5Gi
+    requests:
+      memory: 1.5Gi
   persistence:
-    size: 1Gi
+    size: 120Gi
     storageClass: ''
 syncNode1:
   image:
     repository: ghcr.io/anyproto/any-sync-node
-    tag: v0.11.1
+    tag: latest
   port: 1001
   quicPort: 1011
   nodePort: 30001
   quicNodePort: 30011
   resources:
     limits:
-      memory: 500M
+      memory: 1.5Gi
+    requests:
+      memory: 1.5Gi
   persistence:
     size: 10Gi
     storageClass: ''
 syncNode2:
   image:
     repository: ghcr.io/anyproto/any-sync-node
-    tag: v0.11.1
+    tag: latest
   port: 1002
   quicPort: 1012
   nodePort: 30002
   quicNodePort: 30012
   resources:
     limits:
-      memory: 500M
+      memory: 1.5Gi
+    requests:
+      memory: 1.5Gi
   persistence:
     size: 10Gi
     storageClass: ''
 syncNode3:
   image:
     repository: ghcr.io/anyproto/any-sync-node
-    tag: v0.11.1
+    tag: latest
   port: 1003
   quicPort: 1013
   nodePort: 30003
   quicNodePort: 30013
   resources:
     limits:
-      memory: 500M
+      memory: 1.5Gi
+    requests:
+      memory: 1.5Gi
   persistence:
     size: 10Gi
     storageClass: ''
 consensusnode:
   image:
     repository: ghcr.io/anyproto/any-sync-consensusnode
-    tag: v0.7.2
+    tag: latest
   port: 1006
   quicPort: 1016
   nodePort: 30006
   quicNodePort: 30016
   resources:
     limits:
-      memory: 500M
+      memory: 1.5Gi
+    requests:
+      memory: 1.5Gi
   persistence:
     size: 1Gi
     storageClass: ''
@@ -130,7 +142,7 @@ init:
 coordinatorBootstrap:
   image:
     repository: ghcr.io/anyproto/any-sync-coordinator
-    tag: v0.9.1
+    tag: latest
 createBucket:
   image:
     repository: minio/mc

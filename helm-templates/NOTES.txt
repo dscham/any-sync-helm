@@ -12,11 +12,11 @@ Services are exposed via NodePort. The following ports are available on all clus
 Ensure {{ .Values.externalHostname }} resolves to a cluster node IP.
 
 CLIENT CONFIG:
-The export-client-config job will store the generated client.yml as a ConfigMap.
-Retrieve it with:
-  kubectl get configmap {{ include "any-sync.fullname" . }}-client-config -n {{ .Release.Namespace }} -o jsonpath='{.data.client\.yml}'
+The init job will store the generated configurations as a Secret.
+Retrieve client.yml with:
+  kubectl get secret {{ include "any-sync.fullname" . }}-network-configs -n {{ .Release.Namespace }} -o jsonpath='{.data.client\.yml}' | base64 -d
 
-Or check the job logs:
-  kubectl logs job/{{ include "any-sync.fullname" . }}-export-client-config -n {{ .Release.Namespace }}
+Or check the init job logs:
+  kubectl logs job/{{ include "any-sync.fullname" . }}-init -n {{ .Release.Namespace }} -c create-secret
 
 Import this file into your Anytype app under Settings → Data Management → Self-Hosted.

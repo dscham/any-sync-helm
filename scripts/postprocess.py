@@ -71,15 +71,15 @@ IMAGE_DEFAULTS = {
     "mongo": {"repository": "mongo", "tag": "7.0.28"},
     "redis": {"repository": "redis/redis-stack-server", "tag": "7.2.0-v6"},
     "minio": {"repository": "minio/minio", "tag": "RELEASE.2024-07-04T14-25-45Z"},
-    "coordinator": {"repository": "ghcr.io/anyproto/any-sync-coordinator", "tag": "v0.9.1"},
-    "filenode": {"repository": "ghcr.io/anyproto/any-sync-filenode", "tag": "v0.11.1"},
-    "syncNode1": {"repository": "ghcr.io/anyproto/any-sync-node", "tag": "v0.11.1"},
-    "syncNode2": {"repository": "ghcr.io/anyproto/any-sync-node", "tag": "v0.11.1"},
-    "syncNode3": {"repository": "ghcr.io/anyproto/any-sync-node", "tag": "v0.11.1"},
-    "consensusnode": {"repository": "ghcr.io/anyproto/any-sync-consensusnode", "tag": "v0.7.2"},
+    "coordinator": {"repository": "ghcr.io/anyproto/any-sync-coordinator", "tag": "latest"},
+    "filenode": {"repository": "ghcr.io/anyproto/any-sync-filenode", "tag": "latest"},
+    "syncNode1": {"repository": "ghcr.io/anyproto/any-sync-node", "tag": "latest"},
+    "syncNode2": {"repository": "ghcr.io/anyproto/any-sync-node", "tag": "latest"},
+    "syncNode3": {"repository": "ghcr.io/anyproto/any-sync-node", "tag": "latest"},
+    "consensusnode": {"repository": "ghcr.io/anyproto/any-sync-consensusnode", "tag": "latest"},
     "netcheck": {"repository": "ghcr.io/anyproto/any-sync-tools", "tag": "latest"},
     "init": {"repository": "ghcr.io/anyproto/any-sync-tools", "tag": "latest"},
-    "coordinatorBootstrap": {"repository": "ghcr.io/anyproto/any-sync-coordinator", "tag": "v0.9.1"},
+    "coordinatorBootstrap": {"repository": "ghcr.io/anyproto/any-sync-coordinator", "tag": "latest"},
     "createBucket": {"repository": "minio/mc", "tag": "latest"},
 }
 
@@ -218,7 +218,75 @@ def templatize_resources(data, value_key):
         resources = container.get("resources", {})
         limits = resources.get("limits", {})
         if "memory" in limits:
+            # We inject both limits and requests for memory to prevent OOM
             limits["memory"] = f'{{{{ .Values.{value_key}.resources.limits.memory }}}}'
+            if "requests" not in resources:
+                resources["requests"] = {}
+            resources["requests"]["memory"] = f'{{{{ .Values.{value_key}.resources.requests.memory }}}}'
+            container["resources"] = resources
+
+
+def templatize_secret_mounts(data, service_name):
+    """Replace PVC mounts for config and AWS credentials with K8s Secret mounts."""
+    config_mapping = {
+        "any-sync-node-1": "node-1.yml",
+        "any-sync-node-2": "node-2.yml",
+        "any-sync-node-3": "node-3.yml",
+        "any-sync-coordinator": "coordinator.yml",
+        "any-sync-filenode": "filenode.yml",
+        "any-sync-consensusnode": "consensusnode.yml"
+    }
+    if service_name not in config_mapping:
+        return
+
+    config_key = config_mapping[service_name]
+    
+    containers = data.get("spec", {}).get("template", {}).get("spec", {}).get("containers", [])
+    for container in containers:
+        new_mounts = []
+        for mount in container.get("volumeMounts", []):
+            mount_path = mount.get("mountPath", "")
+            if mount_path.startswith("/etc/any-sync-"):
+                mount["name"] = "network-configs"
+                mount["subPath"] = config_key
+                mount["mountPath"] = mount_path + "/config.yml"
+                new_mounts.append(mount)
+                if service_name == "any-sync-coordinator":
+                    new_mounts.append({
+                        "name": "network-configs",
+                        "mountPath": "/etc/any-sync-coordinator/network.yml",
+                        "subPath": "network.yml"
+                    })
+            elif mount_path == "/root/.aws":
+                mount["name"] = "network-configs"
+                mount["subPath"] = "aws-credentials"
+                mount["mountPath"] = "/root/.aws/credentials"
+                new_mounts.append(mount)
+            else:
+                new_mounts.append(mount)
+        container["volumeMounts"] = new_mounts
+
+    volumes = data.get("spec", {}).get("template", {}).get("spec", {}).get("volumes", [])
+    referenced_volumes = set()
+    for container in containers:
+        for mount in container.get("volumeMounts", []):
+            referenced_volumes.add(mount["name"])
+            
+    new_volumes = []
+    for vol in volumes:
+        if vol.get("name") in referenced_volumes and vol.get("name") != "network-configs":
+            new_volumes.append(vol)
+            
+    if "network-configs" in referenced_volumes:
+        new_volumes.append({
+            "name": "network-configs",
+            "secret": {
+                "secretName": '{{ include "any-sync.fullname" . }}-network-configs'
+            }
+        })
+        
+    data.setdefault("spec", {}).setdefault("template", {}).setdefault("spec", {})["volumes"] = new_volumes
+
 
 
 # Port and service-name values that need templatizing
@@ -473,7 +541,7 @@ def generate_values(env_example_path):
             "bucket": "minio-bucket",
             "accessKey": "minio_access_key",
             "secretKey": "minio_secret_key",
-            "persistence": {"size": "50Gi", "storageClass": ""},
+            "persistence": {"size": "120Gi", "storageClass": ""},
         },
         "coordinator": {
             "image": IMAGE_DEFAULTS["coordinator"],
@@ -486,7 +554,10 @@ def generate_values(env_example_path):
                 "spaceMembersWrite": 1000,
                 "sharedSpacesLimit": 1000,
             },
-            "resources": {"limits": {"memory": "500M"}},
+            "resources": {
+                "limits": {"memory": "1.5Gi"},
+                "requests": {"memory": "1.5Gi"}
+            },
             "persistence": {"size": "1Gi", "storageClass": ""},
         },
         "filenode": {
@@ -495,9 +566,12 @@ def generate_values(env_example_path):
             "quicPort": 1015,
             "nodePort": 30005,
             "quicNodePort": 30015,
-            "defaultLimit": 1099511627776,
-            "resources": {"limits": {"memory": "500M"}},
-            "persistence": {"size": "1Gi", "storageClass": ""},
+            "defaultLimit": 107374182400,
+            "resources": {
+                "limits": {"memory": "1.5Gi"},
+                "requests": {"memory": "1.5Gi"}
+            },
+            "persistence": {"size": "120Gi", "storageClass": ""},
         },
         "syncNode1": {
             "image": IMAGE_DEFAULTS["syncNode1"],
@@ -505,7 +579,10 @@ def generate_values(env_example_path):
             "quicPort": 1011,
             "nodePort": 30001,
             "quicNodePort": 30011,
-            "resources": {"limits": {"memory": "500M"}},
+            "resources": {
+                "limits": {"memory": "1.5Gi"},
+                "requests": {"memory": "1.5Gi"}
+            },
             "persistence": {"size": "10Gi", "storageClass": ""},
         },
         "syncNode2": {
@@ -514,7 +591,10 @@ def generate_values(env_example_path):
             "quicPort": 1012,
             "nodePort": 30002,
             "quicNodePort": 30012,
-            "resources": {"limits": {"memory": "500M"}},
+            "resources": {
+                "limits": {"memory": "1.5Gi"},
+                "requests": {"memory": "1.5Gi"}
+            },
             "persistence": {"size": "10Gi", "storageClass": ""},
         },
         "syncNode3": {
@@ -523,7 +603,10 @@ def generate_values(env_example_path):
             "quicPort": 1013,
             "nodePort": 30003,
             "quicNodePort": 30013,
-            "resources": {"limits": {"memory": "500M"}},
+            "resources": {
+                "limits": {"memory": "1.5Gi"},
+                "requests": {"memory": "1.5Gi"}
+            },
             "persistence": {"size": "10Gi", "storageClass": ""},
         },
         "consensusnode": {
@@ -532,7 +615,10 @@ def generate_values(env_example_path):
             "quicPort": 1016,
             "nodePort": 30006,
             "quicNodePort": 30016,
-            "resources": {"limits": {"memory": "500M"}},
+            "resources": {
+                "limits": {"memory": "1.5Gi"},
+                "requests": {"memory": "1.5Gi"}
+            },
             "persistence": {"size": "1Gi", "storageClass": ""},
         },
         "netcheck": {
@@ -660,6 +746,7 @@ def process(input_dir, output_dir, env_example_path):
         templatize_image(dep, value_key)
         templatize_resources(dep, value_key)
         templatize_ports(dep, value_key)
+        templatize_secret_mounts(dep, svc_name)
 
         out_name = f"{svc_name}-deployment.yaml"
         dump_yaml(dep, os.path.join(templates_out, out_name))
@@ -691,20 +778,23 @@ def process(input_dir, output_dir, env_example_path):
         dump_yaml(cm, os.path.join(templates_out, out_name))
         print(f"  ConfigMap: {out_name}")
 
-    # --- Write remaining PVCs that weren't absorbed into StatefulSets ---
+    # --- Write remaining PVCs that are actually referenced ---
     used_pvcs = set()
-    for svc_name in STATEFULSET_SERVICES:
-        for filename, data in all_files:
-            if data.get("kind") == "PersistentVolumeClaim":
-                claim_name = data.get("metadata", {}).get("name", "")
-                # Check if this PVC belongs to a StatefulSet service
-                pvc_labels = data.get("metadata", {}).get("labels", {})
-                pvc_svc = pvc_labels.get("io.kompose.service", "")
-                if pvc_svc in STATEFULSET_SERVICES:
+    
+    # Find all referenced PVCs in StatefulSets, Deployments, and Jobs
+    # We check the templates output directory directly to see what actually survived
+    for root, dirs, files in os.walk(templates_out):
+        for f in files:
+            if not (f.endswith("-deployment.yaml") or f.endswith("-statefulset.yaml") or f.endswith("-job.yaml")):
+                continue
+            with open(os.path.join(root, f), 'r') as fh:
+                content = fh.read()
+            for claim_name in pvcs.keys():
+                if f"claimName: {claim_name}" in content:
                     used_pvcs.add(claim_name)
 
     for claim_name, pvc_data in pvcs.items():
-        if claim_name in used_pvcs:
+        if claim_name not in used_pvcs:
             continue
         clean_annotations(pvc_data)
         out_name = f"{claim_name}-pvc.yaml"

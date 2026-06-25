@@ -36,12 +36,16 @@ spec:
         resources:
           limits:
             memory: '{{ .Values.syncNode1.resources.limits.memory }}'
+          requests:
+            memory: '{{ .Values.syncNode1.resources.requests.memory }}'
         volumeMounts:
-        - mountPath: /etc/any-sync-node
-          name: any-sync-node-1-claim0
-        - mountPath: /root/.aws
-          name: any-sync-node-1-claim1
+        - mountPath: /etc/any-sync-node/config.yml
+          name: network-configs
+          subPath: node-1.yml
+        - mountPath: /root/.aws/credentials
+          name: network-configs
           readOnly: true
+          subPath: aws-credentials
         - mountPath: /storage
           name: any-sync-node-1-claim2
         - mountPath: /anyStorage
@@ -50,13 +54,6 @@ spec:
           name: any-sync-node-1-claim4
       restartPolicy: Always
       volumes:
-      - name: any-sync-node-1-claim0
-        persistentVolumeClaim:
-          claimName: any-sync-node-1-claim0
-      - name: any-sync-node-1-claim1
-        persistentVolumeClaim:
-          claimName: any-sync-node-1-claim1
-          readOnly: true
       - name: any-sync-node-1-claim2
         persistentVolumeClaim:
           claimName: any-sync-node-1-claim2
@@ -66,3 +63,6 @@ spec:
       - name: any-sync-node-1-claim4
         persistentVolumeClaim:
           claimName: any-sync-node-1-claim4
+      - name: network-configs
+        secret:
+          secretName: '{{ include "any-sync.fullname" . }}-network-configs'

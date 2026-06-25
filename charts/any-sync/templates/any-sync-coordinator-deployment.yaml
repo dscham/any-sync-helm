@@ -34,16 +34,22 @@ spec:
         resources:
           limits:
             memory: '{{ .Values.coordinator.resources.limits.memory }}'
+          requests:
+            memory: '{{ .Values.coordinator.resources.requests.memory }}'
         volumeMounts:
-        - mountPath: /etc/any-sync-coordinator
-          name: any-sync-coordinator-claim0
+        - mountPath: /etc/any-sync-coordinator/config.yml
+          name: network-configs
+          subPath: coordinator.yml
+        - name: network-configs
+          mountPath: /etc/any-sync-coordinator/network.yml
+          subPath: network.yml
         - mountPath: /networkStore
           name: any-sync-coordinator-claim1
       restartPolicy: Always
       volumes:
-      - name: any-sync-coordinator-claim0
-        persistentVolumeClaim:
-          claimName: any-sync-coordinator-claim0
       - name: any-sync-coordinator-claim1
         persistentVolumeClaim:
           claimName: any-sync-coordinator-claim1
+      - name: network-configs
+        secret:
+          secretName: '{{ include "any-sync.fullname" . }}-network-configs'
