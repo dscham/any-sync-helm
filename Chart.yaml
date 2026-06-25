@@ -1,0 +1,13 @@
+apiVersion: v2
+name: any-sync
+description: Helm chart for Anytype any-sync self-hosted infrastructure
+version: 0.1.0
+appVersion: 0.11.1
+keywords:
+- anytype
+- any-sync
+- self-hosted
+- p2p
+home: https://github.com/anyproto/any-sync-dockercompose
+sources:
+- https://github.com/anyproto/any-sync-dockercompose

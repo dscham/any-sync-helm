@@ -1,0 +1,130 @@
+{{/*
+Post-install Job: export client.yml as a ConfigMap and print it to logs.
+Runs after all other init hooks (weight 10).
+*/}}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "any-sync.fullname" . }}-client-config-sa
+  labels:
+    {{- include "any-sync.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "10"
+    helm.sh/hook-delete-policy: before-hook-creation
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "any-sync.fullname" . }}-client-config-role
+  labels:
+    {{- include "any-sync.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "10"
+    helm.sh/hook-delete-policy: before-hook-creation
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["create", "update", "patch", "get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "any-sync.fullname" . }}-client-config-rb
+  labels:
+    {{- include "any-sync.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "10"
+    helm.sh/hook-delete-policy: before-hook-creation
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "any-sync.fullname" . }}-client-config-role
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "any-sync.fullname" . }}-client-config-sa
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "any-sync.fullname" . }}-export-client-config
+  labels:
+    {{- include "any-sync.labels" . | nindent 4 }}
+    app.kubernetes.io/name: export-client-config
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "10"
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: export-client-config
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      serviceAccountName: {{ include "any-sync.fullname" . }}-client-config-sa
+      restartPolicy: OnFailure
+      containers:
+        - name: export-client-config
+          image: {{ .Values.exportClientConfig.image.repository }}:{{ .Values.exportClientConfig.image.tag }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+
+              CLIENT_YML="/config/client.yml"
+              CONFIGMAP_NAME="{{ include "any-sync.fullname" . }}-client-config"
+              NAMESPACE="{{ .Release.Namespace }}"
+
+              echo "============================================="
+              echo " Waiting for client.yml to be generated..."
+              echo "============================================="
+
+              # Wait up to 5 minutes for the init job to produce client.yml
+              TIMEOUT=300
+              ELAPSED=0
+              while [ ! -f "$CLIENT_YML" ] && [ $ELAPSED -lt $TIMEOUT ]; do
+                sleep 5
+                ELAPSED=$((ELAPSED + 5))
+                echo "  Waiting... (${ELAPSED}s / ${TIMEOUT}s)"
+              done
+
+              if [ ! -f "$CLIENT_YML" ]; then
+                echo "ERROR: client.yml not found after ${TIMEOUT}s"
+                exit 1
+              fi
+
+              echo ""
+              echo "============================================="
+              echo " client.yml contents (import into Anytype):"
+              echo "============================================="
+              cat "$CLIENT_YML"
+              echo ""
+              echo "============================================="
+
+              # Create or update the ConfigMap
+              echo "Creating ConfigMap ${CONFIGMAP_NAME}..."
+              kubectl create configmap "$CONFIGMAP_NAME" \
+                --from-file=client.yml="$CLIENT_YML" \
+                --namespace="$NAMESPACE" \
+                --dry-run=client -o yaml | kubectl apply -f -
+
+              echo ""
+              echo "============================================="
+              echo " Client config stored in ConfigMap: ${CONFIGMAP_NAME}"
+              echo " Retrieve it with:"
+              echo "   kubectl get configmap ${CONFIGMAP_NAME} -o jsonpath='{.data.client\.yml}'"
+              echo "============================================="
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+              readOnly: true
+      volumes:
+        - name: config-volume
+          persistentVolumeClaim:
+            claimName: any-sync-init-claim2

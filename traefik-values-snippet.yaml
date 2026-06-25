@@ -1,0 +1,83 @@
+# Traefik Helm Values — Required EntryPoints for any-sync
+#
+# Add these to your Traefik Helm values (e.g., traefik/values.yaml)
+# to expose the any-sync TCP and QUIC ports through Traefik.
+#
+# Example: helm upgrade traefik traefik/traefik -f traefik-values-snippet.yaml
+
+ports:
+  # --- TCP (DRPC/yamux) ---
+  any-sync-coordinator:
+    port: 1004
+    expose:
+      default: true
+    exposedPort: 1004
+    protocol: TCP
+  any-sync-filenode:
+    port: 1005
+    expose:
+      default: true
+    exposedPort: 1005
+    protocol: TCP
+  any-sync-consensusnode:
+    port: 1006
+    expose:
+      default: true
+    exposedPort: 1006
+    protocol: TCP
+  any-sync-node-1:
+    port: 1001
+    expose:
+      default: true
+    exposedPort: 1001
+    protocol: TCP
+  any-sync-node-2:
+    port: 1002
+    expose:
+      default: true
+    exposedPort: 1002
+    protocol: TCP
+  any-sync-node-3:
+    port: 1003
+    expose:
+      default: true
+    exposedPort: 1003
+    protocol: TCP
+
+  # --- UDP (QUIC) ---
+  any-sync-coordinator-quic:
+    port: 1014
+    expose:
+      default: true
+    exposedPort: 1014
+    protocol: UDP
+  any-sync-filenode-quic:
+    port: 1015
+    expose:
+      default: true
+    exposedPort: 1015
+    protocol: UDP
+  any-sync-consensusnode-quic:
+    port: 1016
+    expose:
+      default: true
+    exposedPort: 1016
+    protocol: UDP
+  any-sync-node-1-quic:
+    port: 1011
+    expose:
+      default: true
+    exposedPort: 1011
+    protocol: UDP
+  any-sync-node-2-quic:
+    port: 1012
+    expose:
+      default: true
+    exposedPort: 1012
+    protocol: UDP
+  any-sync-node-3-quic:
+    port: 1013
+    expose:
+      default: true
+    exposedPort: 1013
+    protocol: UDP

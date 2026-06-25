@@ -1,0 +1,129 @@
+mongo:
+  image:
+    repository: mongo
+    tag: 7.0.28
+  port: 27001
+  replicaSet: rs0
+  persistence:
+    size: 10Gi
+    storageClass: ''
+redis:
+  image:
+    repository: redis/redis-stack-server
+    tag: 7.2.0-v6
+  port: 6379
+  maxMemory: 256mb
+  persistence:
+    size: 5Gi
+    storageClass: ''
+minio:
+  image:
+    repository: minio/minio
+    tag: RELEASE.2024-07-04T14-25-45Z
+  port: 9000
+  webPort: 9001
+  bucket: minio-bucket
+  auth:
+    rootUser: minio_access_key
+    rootPassword: minio_secret_key
+  persistence:
+    size: 50Gi
+    storageClass: ''
+coordinator:
+  image:
+    repository: ghcr.io/anyproto/any-sync-coordinator
+    tag: v0.9.1
+  port: 1004
+  quicPort: 1014
+  resources:
+    limits:
+      memory: 500M
+  persistence:
+    size: 1Gi
+    storageClass: ''
+filenode:
+  image:
+    repository: ghcr.io/anyproto/any-sync-filenode
+    tag: v0.11.1
+  port: 1005
+  quicPort: 1015
+  defaultLimit: 1099511627776
+  resources:
+    limits:
+      memory: 500M
+  persistence:
+    size: 1Gi
+    storageClass: ''
+syncNode1:
+  image:
+    repository: ghcr.io/anyproto/any-sync-node
+    tag: v0.11.1
+  port: 1001
+  quicPort: 1011
+  resources:
+    limits:
+      memory: 500M
+  persistence:
+    size: 10Gi
+    storageClass: ''
+syncNode2:
+  image:
+    repository: ghcr.io/anyproto/any-sync-node
+    tag: v0.11.1
+  port: 1002
+  quicPort: 1012
+  resources:
+    limits:
+      memory: 500M
+  persistence:
+    size: 10Gi
+    storageClass: ''
+syncNode3:
+  image:
+    repository: ghcr.io/anyproto/any-sync-node
+    tag: v0.11.1
+  port: 1003
+  quicPort: 1013
+  resources:
+    limits:
+      memory: 500M
+  persistence:
+    size: 10Gi
+    storageClass: ''
+consensusnode:
+  image:
+    repository: ghcr.io/anyproto/any-sync-consensusnode
+    tag: v0.7.2
+  port: 1006
+  quicPort: 1016
+  resources:
+    limits:
+      memory: 500M
+  persistence:
+    size: 1Gi
+    storageClass: ''
+netcheck:
+  image:
+    repository: ghcr.io/anyproto/any-sync-tools
+    tag: latest
+  enabled: true
+init:
+  image:
+    repository: any-sync-init
+    tag: latest
+coordinatorBootstrap:
+  image:
+    repository: ghcr.io/anyproto/any-sync-coordinator
+    tag: v0.9.1
+createBucket:
+  image:
+    repository: minio/mc
+    tag: latest
+exportClientConfig:
+  image:
+    repository: bitnami/kubectl
+    tag: latest
+ingress:
+  type: none
+  nginx:
+    configMapNamespace: ''

@@ -1,0 +1,61 @@
+# NGINX Ingress Controller Helm Values — Required for any-sync TCP/UDP proxying
+#
+# Add these to your ingress-nginx Helm values to expose the any-sync ports.
+# The ConfigMaps are created by the any-sync chart when ingress.type=nginx.
+#
+# Example: helm upgrade ingress-nginx ingress-nginx/ingress-nginx -f nginx-values-snippet.yaml
+
+controller:
+  # Point to the ConfigMaps created by the any-sync chart
+  tcp:
+    configMapNamespace: "" # Set to the namespace where the any-sync chart is installed
+    configMapName: "<release>-any-sync-nginx-tcp-services"
+  udp:
+    configMapNamespace: "" # Set to the namespace where the any-sync chart is installed
+    configMapName: "<release>-any-sync-nginx-udp-services"
+
+  # Expose the TCP ports
+  extraPorts:
+    # DRPC/yamux (TCP)
+    - name: any-sync-node-1
+      containerPort: 1001
+      protocol: TCP
+    - name: any-sync-node-2
+      containerPort: 1002
+      protocol: TCP
+    - name: any-sync-node-3
+      containerPort: 1003
+      protocol: TCP
+    - name: any-sync-coordinator
+      containerPort: 1004
+      protocol: TCP
+    - name: any-sync-filenode
+      containerPort: 1005
+      protocol: TCP
+    - name: any-sync-consensusnode
+      containerPort: 1006
+      protocol: TCP
+    # QUIC (UDP)
+    - name: any-sync-node-1-quic
+      containerPort: 1011
+      protocol: UDP
+    - name: any-sync-node-2-quic
+      containerPort: 1012
+      protocol: UDP
+    - name: any-sync-node-3-quic
+      containerPort: 1013
+      protocol: UDP
+    - name: any-sync-coordinator-quic
+      containerPort: 1014
+      protocol: UDP
+    - name: any-sync-filenode-quic
+      containerPort: 1015
+      protocol: UDP
+    - name: any-sync-consensusnode-quic
+      containerPort: 1016
+      protocol: UDP
+
+  service:
+    # Expose these ports on the LoadBalancer/NodePort service
+    enableTcp: true
+    enableUdp: true

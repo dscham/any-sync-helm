@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: any-sync-init
+  labels: &id001
+    app.kubernetes.io/name: any-sync-init
+    app.kubernetes.io/instance: '{{ .Release.Name }}'
+    app.kubernetes.io/managed-by: '{{ .Release.Service }}'
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: '-5'
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels: *id001
+    spec:
+      containers:
+      - image: '{{ .Values.init.image.repository }}:{{ .Values.init.image.tag }}'
+        name: any-sync-init
+        volumeMounts:
+        - mountPath: /code/.env
+          name: any-sync-init-cm0
+          readOnly: true
+          subPath: .env
+        - mountPath: /code/etc
+          name: any-sync-init-claim2
+        - mountPath: /code/storage
+          name: any-sync-init-claim3
+      restartPolicy: OnFailure
+      volumes:
+      - configMap:
+          items:
+          - key: .env
+            path: .env
+          name: any-sync-init-cm0
+        name: any-sync-init-cm0
+      - name: any-sync-init-claim2
+        persistentVolumeClaim:
+          claimName: any-sync-init-claim2
+      - name: any-sync-init-claim3
+        persistentVolumeClaim:
+          claimName: any-sync-init-claim3

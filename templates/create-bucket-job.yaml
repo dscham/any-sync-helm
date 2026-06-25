@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-bucket
+  labels: &id001
+    app.kubernetes.io/name: create-bucket
+    app.kubernetes.io/instance: '{{ .Release.Name }}'
+    app.kubernetes.io/managed-by: '{{ .Release.Service }}'
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: '2'
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels: *id001
+    spec:
+      containers:
+      - command:
+        - /bin/sh
+        - -c
+        - ' until (/usr/bin/mc alias set minio http://minio:9000 ''minio_access_key'' ''minio_secret_key'') do echo ''...waiting...'' && sleep 1; done; /usr/bin/mc mb minio/minio-bucket; exit 0; '
+        image: '{{ .Values.createBucket.image.repository }}:{{ .Values.createBucket.image.tag }}'
+        name: create-bucket
+      restartPolicy: OnFailure
