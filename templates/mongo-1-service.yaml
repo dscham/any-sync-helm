@@ -8,7 +8,7 @@ metadata:
   name: mongo-1
 spec:
   ports:
-  - name: '{{ .Values.mongo.port }}'
+  - name: mongo-tcp
     port: '{{ .Values.mongo.port }}'
     targetPort: '{{ .Values.mongo.port }}'
   selector:

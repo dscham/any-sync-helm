@@ -35,6 +35,8 @@ coordinator:
     tag: v0.9.1
   port: 1004
   quicPort: 1014
+  nodePort: 30004
+  quicNodePort: 30014
   limits:
     spaceMembersRead: 1000
     spaceMembersWrite: 1000
@@ -51,6 +53,8 @@ filenode:
     tag: v0.11.1
   port: 1005
   quicPort: 1015
+  nodePort: 30005
+  quicNodePort: 30015
   defaultLimit: 1099511627776
   resources:
     limits:
@@ -64,6 +68,8 @@ syncNode1:
     tag: v0.11.1
   port: 1001
   quicPort: 1011
+  nodePort: 30001
+  quicNodePort: 30011
   resources:
     limits:
       memory: 500M
@@ -76,6 +82,8 @@ syncNode2:
     tag: v0.11.1
   port: 1002
   quicPort: 1012
+  nodePort: 30002
+  quicNodePort: 30012
   resources:
     limits:
       memory: 500M
@@ -88,6 +96,8 @@ syncNode3:
     tag: v0.11.1
   port: 1003
   quicPort: 1013
+  nodePort: 30003
+  quicNodePort: 30013
   resources:
     limits:
       memory: 500M
@@ -100,6 +110,8 @@ consensusnode:
     tag: v0.7.2
   port: 1006
   quicPort: 1016
+  nodePort: 30006
+  quicNodePort: 30016
   resources:
     limits:
       memory: 500M
@@ -127,7 +139,3 @@ exportClientConfig:
   image:
     repository: bitnami/kubectl
     tag: latest
-ingress:
-  type: none
-  nginx:
-    configMapNamespace: ''

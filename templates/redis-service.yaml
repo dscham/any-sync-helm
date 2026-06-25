@@ -8,7 +8,7 @@ metadata:
   name: redis
 spec:
   ports:
-  - name: '{{ .Values.redis.port }}'
+  - name: redis-tcp
     port: '{{ .Values.redis.port }}'
     targetPort: '{{ .Values.redis.port }}'
   selector:

@@ -27,7 +27,7 @@ spec:
         ports:
         - containerPort: '{{ .Values.consensusnode.port }}'
           protocol: TCP
-        - containerPort: 1016
+        - containerPort: '{{ .Values.consensusnode.quicPort }}'
           protocol: UDP
         - containerPort: 8000
           protocol: TCP

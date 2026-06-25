@@ -27,7 +27,7 @@ spec:
         ports:
         - containerPort: '{{ .Values.coordinator.port }}'
           protocol: TCP
-        - containerPort: 1014
+        - containerPort: '{{ .Values.coordinator.quicPort }}'
           protocol: UDP
         - containerPort: 8000
           protocol: TCP

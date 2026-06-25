@@ -13,27 +13,60 @@ cd any-sync-helm
 
 # Install (you MUST set externalHostname)
 helm install any-sync ./ \
-  --set externalHostname=anytype.example.com \
-  --set ingress.type=traefik
+  --set externalHostname=anytype.example.com
 ```
 
-After install, retrieve the client config for your Anytype apps:
+Point the DNS record for `anytype.example.com` at any of your cluster node IPs.
+
+### What Happens on Install
+
+The chart replicates the full setup flow of the upstream docker-compose project:
+
+1. **Init Job** (pre-install) — generates crypto keys, node configuration files, and `client.yml` using the official `any-sync-tools` image. Scripts and config templates are mounted from ConfigMaps — no custom image build needed.
+2. **MongoDB replica set** — starts with `--replSet` and a liveness probe that automatically runs `rs.initiate()` on first boot.
+3. **MinIO bucket creation** (post-install) — creates the S3 bucket for file storage.
+4. **Coordinator bootstrap** (post-install) — registers the network configuration with the coordinator.
+5. **Client config export** (post-install) — parses the generated `client.yml` and stores it as a ConfigMap for easy retrieval.
+6. **All sync services start** — coordinator, consensus node, file node, and 3 sync nodes.
+
+### Retrieving the Client Config
+
+After install, retrieve the `client.yml` to configure your Anytype apps:
 
 ```bash
 # From the ConfigMap (persisted)
 kubectl get configmap <release>-any-sync-client-config -o jsonpath='{.data.client\.yml}'
 
-# Or from the export-client-config job logs
+# Or from the export job logs
 kubectl logs job/<release>-any-sync-export-client-config
 ```
 
-## Required Values
+Import this file in your Anytype app under **Settings → Data Management → Self-Hosted**.
 
-These **must** be set — the chart will not produce a working deployment without them.
+## Required Values
 
 | Value | Description |
 |---|---|
-| `externalHostname` | The external hostname or IP that Anytype clients use to reach the sync services. This gets embedded into `client.yml`. For example, a public domain pointed at your ingress. |
+| `externalHostname` | The FQDN or IP that Anytype clients use to connect. Gets embedded into `client.yml` with the correct NodePort numbers. |
+
+## Networking
+
+All any-sync services are exposed via **NodePort** — no ingress controller or load balancer required. This works on any Kubernetes cluster out of the box.
+
+### Exposed Ports
+
+| Service | TCP NodePort | QUIC/UDP NodePort | Internal Port |
+|---|---|---|---|
+| Sync Node 1 | 30001 | 30011 | 1001 / 1011 |
+| Sync Node 2 | 30002 | 30012 | 1002 / 1012 |
+| Sync Node 3 | 30003 | 30013 | 1003 / 1013 |
+| Coordinator | 30004 | 30014 | 1004 / 1014 |
+| Filenode | 30005 | 30015 | 1005 / 1015 |
+| Consensus Node | 30006 | 30016 | 1006 / 1016 |
+
+NodePort numbers are configurable via `values.yaml` (see below).
+
+The init job automatically patches `client.yml` so that external addresses use the NodePort numbers while internal service-to-service communication uses the original ports.
 
 ## Values Reference
 
@@ -41,9 +74,7 @@ These **must** be set — the chart will not produce a working deployment withou
 
 | Value | Default | Description |
 |---|---|---|
-| `externalHostname` | `""` (**required**) | External hostname/IP for client connections |
-| `ingress.type` | `none` | Ingress controller: `none`, `traefik`, `nginx`, or `haproxy` |
-| `ingress.nginx.configMapNamespace` | `""` | Namespace of the NGINX ingress controller (if different from release) |
+| `externalHostname` | `""` (**required**) | External FQDN or IP for client connections |
 
 ### MongoDB
 
@@ -87,8 +118,10 @@ These **must** be set — the chart will not produce a working deployment withou
 |---|---|---|
 | `coordinator.image.repository` | `ghcr.io/anyproto/any-sync-coordinator` | Image |
 | `coordinator.image.tag` | `v0.9.1` | Version |
-| `coordinator.port` | `1004` | TCP (yamux) port |
-| `coordinator.quicPort` | `1014` | QUIC transport port |
+| `coordinator.port` | `1004` | Internal TCP port |
+| `coordinator.quicPort` | `1014` | Internal QUIC port |
+| `coordinator.nodePort` | `30004` | External TCP NodePort |
+| `coordinator.quicNodePort` | `30014` | External QUIC NodePort |
 | `coordinator.limits.spaceMembersRead` | `1000` | Max space members (read) |
 | `coordinator.limits.spaceMembersWrite` | `1000` | Max space members (write) |
 | `coordinator.limits.sharedSpacesLimit` | `1000` | Max shared spaces per account |
@@ -102,23 +135,27 @@ These **must** be set — the chart will not produce a working deployment withou
 |---|---|---|
 | `filenode.image.repository` | `ghcr.io/anyproto/any-sync-filenode` | Image |
 | `filenode.image.tag` | `v0.11.1` | Version |
-| `filenode.port` | `1005` | TCP (yamux) port |
-| `filenode.quicPort` | `1015` | QUIC transport port |
-| `filenode.defaultLimit` | `1099511627776` | Per-account storage quota in bytes (default: 1 TiB) |
+| `filenode.port` | `1005` | Internal TCP port |
+| `filenode.quicPort` | `1015` | Internal QUIC port |
+| `filenode.nodePort` | `30005` | External TCP NodePort |
+| `filenode.quicNodePort` | `30015` | External QUIC NodePort |
+| `filenode.defaultLimit` | `1099511627776` | Per-account storage quota in bytes (1 TiB) |
 | `filenode.resources.limits.memory` | `500M` | Container memory limit |
 | `filenode.persistence.size` | `1Gi` | PVC size |
 | `filenode.persistence.storageClass` | `""` (default) | StorageClass name |
 
 ### Sync Nodes (1–3)
 
-Each sync node has identical configuration keys. Replace `N` with `1`, `2`, or `3` (keys: `syncNode1`, `syncNode2`, `syncNode3`).
+Replace `N` with `1`, `2`, or `3` (keys: `syncNode1`, `syncNode2`, `syncNode3`).
 
 | Value | Default (node 1/2/3) | Description |
 |---|---|---|
 | `syncNodeN.image.repository` | `ghcr.io/anyproto/any-sync-node` | Image |
 | `syncNodeN.image.tag` | `v0.11.1` | Version |
-| `syncNodeN.port` | `1001` / `1002` / `1003` | TCP (yamux) port |
-| `syncNodeN.quicPort` | `1011` / `1012` / `1013` | QUIC transport port |
+| `syncNodeN.port` | `1001` / `1002` / `1003` | Internal TCP port |
+| `syncNodeN.quicPort` | `1011` / `1012` / `1013` | Internal QUIC port |
+| `syncNodeN.nodePort` | `30001` / `30002` / `30003` | External TCP NodePort |
+| `syncNodeN.quicNodePort` | `30011` / `30012` / `30013` | External QUIC NodePort |
 | `syncNodeN.resources.limits.memory` | `500M` | Container memory limit |
 | `syncNodeN.persistence.size` | `10Gi` | PVC size |
 | `syncNodeN.persistence.storageClass` | `""` (default) | StorageClass name |
@@ -129,8 +166,10 @@ Each sync node has identical configuration keys. Replace `N` with `1`, `2`, or `
 |---|---|---|
 | `consensusnode.image.repository` | `ghcr.io/anyproto/any-sync-consensusnode` | Image |
 | `consensusnode.image.tag` | `v0.7.2` | Version |
-| `consensusnode.port` | `1006` | TCP (yamux) port |
-| `consensusnode.quicPort` | `1016` | QUIC transport port |
+| `consensusnode.port` | `1006` | Internal TCP port |
+| `consensusnode.quicPort` | `1016` | Internal QUIC port |
+| `consensusnode.nodePort` | `30006` | External TCP NodePort |
+| `consensusnode.quicNodePort` | `30016` | External QUIC NodePort |
 | `consensusnode.resources.limits.memory` | `500M` | Container memory limit |
 | `consensusnode.persistence.size` | `1Gi` | PVC size |
 | `consensusnode.persistence.storageClass` | `""` (default) | StorageClass name |
@@ -151,54 +190,6 @@ Each sync node has identical configuration keys. Replace `N` with `1`, `2`, or `
 | `exportClientConfig.image.repository` | `bitnami/kubectl` | Client config export job image |
 | `exportClientConfig.image.tag` | `latest` | Version |
 
-## Ingress
-
-The chart supports four ingress modes:
-
-| `ingress.type` | Controller | What gets created |
-|---|---|---|
-| `none` (default) | — | No ingress resources; services use ClusterIP |
-| `traefik` | Traefik v3 | `IngressRouteTCP` + `IngressRouteUDP` CRDs |
-| `nginx` | NGINX Ingress Controller | `tcp-services` + `udp-services` ConfigMaps |
-| `haproxy` | HAProxy Ingress Controller | TCP service proxy ConfigMap |
-
-### Exposed Ports
-
-All any-sync services communicate over TCP (yamux) and UDP (QUIC). The following ports need to be reachable by Anytype clients:
-
-| Service | TCP Port | QUIC Port |
-|---|---|---|
-| Sync Node 1 | 1001 | 1011 |
-| Sync Node 2 | 1002 | 1012 |
-| Sync Node 3 | 1003 | 1013 |
-| Coordinator | 1004 | 1014 |
-| Filenode | 1005 | 1015 |
-| Consensus Node | 1006 | 1016 |
-
-### Traefik
-
-Requires the Traefik IngressRoute CRDs. The chart creates `IngressRouteTCP` and `IngressRouteUDP` resources directly.
-
-Your Traefik Helm values must expose the ports as entrypoints. See `traefik-values-snippet.yaml` included in the chart for a working example.
-
-### NGINX
-
-NGINX Ingress Controller exposes TCP/UDP services via ConfigMaps. The chart creates `tcp-services` and `udp-services` ConfigMaps.
-
-You must configure your NGINX controller deployment to use these ConfigMaps. See `nginx-values-snippet.yaml` included in the chart for the required configuration.
-
-If your NGINX controller runs in a different namespace than the chart, set:
-
-```yaml
-ingress:
-  nginx:
-    configMapNamespace: ingress-nginx  # your controller's namespace
-```
-
-### HAProxy
-
-Similar to NGINX, uses a ConfigMap-based approach. The chart creates the TCP proxy ConfigMap that HAProxy Ingress reads.
-
 ## Architecture
 
 ```
@@ -215,7 +206,7 @@ Similar to NGINX, uses a ConfigMap-based approach. The chart creates the TCP pro
 │  │(Job)                │  │ (Job)         │  │-config (Job)  │ │
 │  └────────────────────┘  └──────────────┘  └───────────────┘ │
 ├───────────────────────────────────────────────────────────────┤
-│                      Core Services                           │
+│          Core Services (NodePort: 30001–30016)               │
 │  ┌────────────┐ ┌────────────┐ ┌────────────┐               │
 │  │sync-node-1 │ │sync-node-2 │ │sync-node-3 │ Deployments   │
 │  └────────────┘ └────────────┘ └────────────┘               │
@@ -223,7 +214,7 @@ Similar to NGINX, uses a ConfigMap-based approach. The chart creates the TCP pro
 │  │coordinator │ │  filenode   │ │consensusnode │ Deployments  │
 │  └────────────┘ └────────────┘ └──────────────┘             │
 ├───────────────────────────────────────────────────────────────┤
-│                    Data Services                             │
+│                Data Services (ClusterIP only)                │
 │  ┌────────────┐ ┌────────────┐ ┌────────────┐               │
 │  │  MongoDB   │ │   Redis    │ │   MinIO    │ StatefulSets   │
 │  └────────────┘ └────────────┘ └────────────┘               │
@@ -236,8 +227,7 @@ This chart is **auto-generated** from the upstream [any-sync-dockercompose](http
 
 1. **`source` branch** contains the upstream docker-compose files, plus:
    - `scripts/postprocess.py` — transforms kompose output into proper Helm templates
-   - `helm-templates/` — hand-crafted templates for ingress, init, and client config export
-   - `generate-chart.sh` — local generation script
+   - `helm-templates/` — hand-crafted templates for init, client config export, and secrets
    - `.github/workflows/` — CI automation
 
 2. **GitHub Actions** automatically:
@@ -257,9 +247,6 @@ git checkout source
 # Install Python 3 with PyYAML
 
 # Generate the chart locally
-./generate-chart.sh
-
-# Or manually:
 cp .env.example .env
 kompose convert -c -f docker-compose.yml -o .tmp-chart
 python3 scripts/postprocess.py
