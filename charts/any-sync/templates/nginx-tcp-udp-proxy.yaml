@@ -1,0 +1,44 @@
+{{/*
+NGINX Ingress Controller TCP/UDP proxy configuration.
+
+NGINX Ingress exposes non-HTTP traffic by patching its own ConfigMaps.
+These ConfigMaps tell the controller which backend to proxy for each port.
+The controller's Deployment/DaemonSet must also expose these ports — see
+the nginx-values-snippet.yaml reference file for the required Helm values.
+*/}}
+{{- if eq .Values.ingress.type "nginx" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "any-sync.fullname" . }}-nginx-tcp-services
+  labels:
+    {{- include "any-sync.labels" . | nindent 4 }}
+  {{- if .Values.ingress.nginx.configMapNamespace }}
+  namespace: {{ .Values.ingress.nginx.configMapNamespace }}
+  {{- end }}
+data:
+  # Format: "<external-port>": "<namespace>/<service>:<service-port>"
+  "{{ .Values.coordinator.port }}": "{{ .Release.Namespace }}/any-sync-coordinator:{{ .Values.coordinator.port }}"
+  "{{ .Values.filenode.port }}": "{{ .Release.Namespace }}/any-sync-filenode:{{ .Values.filenode.port }}"
+  "{{ .Values.consensusnode.port }}": "{{ .Release.Namespace }}/any-sync-consensusnode:{{ .Values.consensusnode.port }}"
+  "{{ .Values.syncNode1.port }}": "{{ .Release.Namespace }}/any-sync-node-1:{{ .Values.syncNode1.port }}"
+  "{{ .Values.syncNode2.port }}": "{{ .Release.Namespace }}/any-sync-node-2:{{ .Values.syncNode2.port }}"
+  "{{ .Values.syncNode3.port }}": "{{ .Release.Namespace }}/any-sync-node-3:{{ .Values.syncNode3.port }}"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "any-sync.fullname" . }}-nginx-udp-services
+  labels:
+    {{- include "any-sync.labels" . | nindent 4 }}
+  {{- if .Values.ingress.nginx.configMapNamespace }}
+  namespace: {{ .Values.ingress.nginx.configMapNamespace }}
+  {{- end }}
+data:
+  "{{ .Values.coordinator.quicPort }}": "{{ .Release.Namespace }}/any-sync-coordinator:{{ .Values.coordinator.quicPort }}"
+  "{{ .Values.filenode.quicPort }}": "{{ .Release.Namespace }}/any-sync-filenode:{{ .Values.filenode.quicPort }}"
+  "{{ .Values.consensusnode.quicPort }}": "{{ .Release.Namespace }}/any-sync-consensusnode:{{ .Values.consensusnode.quicPort }}"
+  "{{ .Values.syncNode1.quicPort }}": "{{ .Release.Namespace }}/any-sync-node-1:{{ .Values.syncNode1.quicPort }}"
+  "{{ .Values.syncNode2.quicPort }}": "{{ .Release.Namespace }}/any-sync-node-2:{{ .Values.syncNode2.quicPort }}"
+  "{{ .Values.syncNode3.quicPort }}": "{{ .Release.Namespace }}/any-sync-node-3:{{ .Values.syncNode3.quicPort }}"
+{{- end }}

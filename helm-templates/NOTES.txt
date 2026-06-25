@@ -1,0 +1,38 @@
+any-sync has been installed.
+
+To check the status of all pods:
+  kubectl get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+
+{{- if eq .Values.ingress.type "traefik" }}
+
+INGRESS: Traefik IngressRouteTCP/UDP resources have been created.
+Ensure your Traefik deployment has the required entryPoints configured.
+See traefik-values-snippet.yaml in the chart repository for the required ports.
+{{- else if eq .Values.ingress.type "nginx" }}
+
+INGRESS: NGINX TCP/UDP proxy ConfigMaps have been created.
+Configure your nginx-ingress controller to reference them:
+  --tcp-services-configmap={{ .Release.Namespace }}/{{ include "any-sync.fullname" . }}-nginx-tcp-services
+  --udp-services-configmap={{ .Release.Namespace }}/{{ include "any-sync.fullname" . }}-nginx-udp-services
+See nginx-values-snippet.yaml in the chart repository for full Helm values.
+{{- else if eq .Values.ingress.type "haproxy" }}
+
+INGRESS: HAProxy TCP service ConfigMap has been created.
+Configure your haproxy-ingress controller to reference:
+  {{ include "any-sync.fullname" . }}-haproxy-tcp-services
+{{- else }}
+
+INGRESS: No ingress controller configured (ingress.type=none).
+Set ingress.type to "traefik", "nginx", or "haproxy" in values.yaml
+to expose any-sync services externally.
+{{- end }}
+
+CLIENT CONFIG:
+The export-client-config job will store the generated client.yml as a ConfigMap.
+Retrieve it with:
+  kubectl get configmap {{ include "any-sync.fullname" . }}-client-config -n {{ .Release.Namespace }} -o jsonpath='{.data.client\.yml}'
+
+Or check the job logs:
+  kubectl logs job/{{ include "any-sync.fullname" . }}-export-client-config -n {{ .Release.Namespace }}
+
+Import this file into your Anytype app under Settings → Data Management → Self-Hosted.

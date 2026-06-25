@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/name: any-sync-coordinator
+    app.kubernetes.io/instance: '{{ .Release.Name }}'
+    app.kubernetes.io/managed-by: '{{ .Release.Service }}'
+  name: any-sync-coordinator
+spec:
+  ports:
+  - name: '1004'
+    port: 1004
+    targetPort: 1004
+  - name: '1014'
+    port: 1014
+    protocol: UDP
+    targetPort: 1014
+  - name: '8004'
+    port: 8004
+    targetPort: 8000
+  selector:
+    io.kompose.service: any-sync-coordinator

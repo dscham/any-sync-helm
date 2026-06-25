@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/name: mongo-1
+    app.kubernetes.io/instance: '{{ .Release.Name }}'
+    app.kubernetes.io/managed-by: '{{ .Release.Service }}'
+  name: mongo-1
+spec:
+  ports:
+  - name: '27001'
+    port: 27001
+    targetPort: 27001
+  selector:
+    io.kompose.service: mongo-1
+  clusterIP: None

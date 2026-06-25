@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: netcheck
+    app.kubernetes.io/instance: '{{ .Release.Name }}'
+    app.kubernetes.io/managed-by: '{{ .Release.Service }}'
+  name: netcheck
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: netcheck
+      app.kubernetes.io/instance: '{{ .Release.Name }}'
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: netcheck
+        app.kubernetes.io/instance: '{{ .Release.Name }}'
+        app.kubernetes.io/managed-by: '{{ .Release.Service }}'
+    spec:
+      containers:
+      - args:
+        - "while true; do\n  echo \"$()(date): Running netcheck...\"\n  any-sync-netcheck -c /conf/nodes.yml 2>&1 | tee /tmp/netcheck-last.log\n  echo \"$()(date): Netcheck completed, waiting 5 seconds...\"\
+          \n  sleep 5\ndone\n"
+        command:
+        - /bin/sh
+        - -c
+        image: '{{ .Values.netcheck.image.repository }}:{{ .Values.netcheck.image.tag }}'
+        livenessProbe:
+          exec:
+            command:
+            - grep -qE 'netcheck\s+success' /tmp/netcheck-last.log
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        name: netcheck
+        volumeMounts:
+        - mountPath: /conf
+          name: netcheck-claim0
+      restartPolicy: Always
+      volumes:
+      - name: netcheck-claim0
+        persistentVolumeClaim:
+          claimName: netcheck-claim0

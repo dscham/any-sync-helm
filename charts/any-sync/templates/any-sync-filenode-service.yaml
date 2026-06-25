@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/name: any-sync-filenode
+    app.kubernetes.io/instance: '{{ .Release.Name }}'
+    app.kubernetes.io/managed-by: '{{ .Release.Service }}'
+  name: any-sync-filenode
+spec:
+  ports:
+  - name: '1005'
+    port: 1005
+    targetPort: 1005
+  - name: '1015'
+    port: 1015
+    protocol: UDP
+    targetPort: 1015
+  - name: '8005'
+    port: 8005
+    targetPort: 8000
+  selector:
+    io.kompose.service: any-sync-filenode

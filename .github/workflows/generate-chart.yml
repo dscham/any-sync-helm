@@ -1,0 +1,158 @@
+name: Generate Helm Chart
+
+on:
+  push:
+    branches: [source]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source branch
+        uses: actions/checkout@v4
+        with:
+          ref: source
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install pyyaml
+          # Install kompose
+          curl -L https://github.com/kubernetes/kompose/releases/latest/download/kompose-linux-amd64 -o /usr/local/bin/kompose
+          chmod +x /usr/local/bin/kompose
+          # Install helm (for linting)
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      - name: Generate chart
+        run: |
+          set -euo pipefail
+
+          # Prepare .env
+          cp .env.example .env
+
+          # Run kompose
+          kompose convert -c -f docker-compose.yml -o .tmp-chart
+
+          # Run post-processor
+          rm -rf charts/any-sync/templates charts/any-sync/Chart.yaml charts/any-sync/values.yaml
+          mkdir -p charts/any-sync/templates
+          python3 scripts/postprocess.py
+
+          # Copy hand-crafted templates
+          cp helm-templates/* charts/any-sync/templates/
+
+          # Move non-template reference files out of templates/
+          for f in traefik-values-snippet.yaml nginx-values-snippet.yaml; do
+            [ -f "charts/any-sync/templates/$f" ] && mv "charts/any-sync/templates/$f" "charts/any-sync/"
+          done
+
+          # Cleanup
+          rm -rf .tmp-chart .env
+
+      - name: Lint chart
+        run: helm lint charts/any-sync
+
+      - name: Validate template rendering
+        run: |
+          echo "=== Default (none) ==="
+          helm template test charts/any-sync > /dev/null
+          echo "=== Traefik ==="
+          helm template test charts/any-sync --set ingress.type=traefik > /dev/null
+          echo "=== NGINX ==="
+          helm template test charts/any-sync --set ingress.type=nginx > /dev/null
+          echo "=== HAProxy ==="
+          helm template test charts/any-sync --set ingress.type=haproxy > /dev/null
+          echo "All modes render successfully."
+
+      - name: Publish chart to main branch
+        run: |
+          set -euo pipefail
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Save chart to a temp location
+          TMPDIR=$(mktemp -d)
+          cp -r charts/any-sync/* "$TMPDIR/"
+
+          # Create a README for the main branch
+          cat > "$TMPDIR/README.md" << 'EOF'
+          # any-sync Helm Chart
+
+          Helm chart for deploying the [Anytype any-sync](https://github.com/anyproto/any-sync-dockercompose) self-hosted infrastructure on Kubernetes.
+
+          **This branch is auto-generated.** The chart is built from the [`source`](../../tree/source) branch by GitHub Actions.
+
+          ## Quick Start
+
+          ```bash
+          # Add as a local chart
+          helm install any-sync ./
+
+          # With Traefik ingress
+          helm install any-sync ./ --set ingress.type=traefik
+
+          # With NGINX ingress
+          helm install any-sync ./ --set ingress.type=nginx
+          ```
+
+          ## Ingress Support
+
+          | `ingress.type` | Controller | What gets created |
+          |---|---|---|
+          | `none` (default) | — | No ingress resources |
+          | `traefik` | Traefik v3 | IngressRouteTCP + IngressRouteUDP CRDs |
+          | `nginx` | NGINX Ingress | tcp-services + udp-services ConfigMaps |
+          | `haproxy` | HAProxy Ingress | TCP service proxy ConfigMap |
+
+          See `traefik-values-snippet.yaml` or `nginx-values-snippet.yaml` for the required ingress controller configuration.
+
+          ## Client Configuration
+
+          After install, retrieve the client config for your Anytype apps:
+
+          ```bash
+          kubectl get configmap <release>-any-sync-client-config -o jsonpath='{.data.client\.yml}'
+          ```
+
+          ## Source
+
+          The generation scripts and hand-crafted templates live on the [`source`](../../tree/source) branch.
+          EOF
+          # Fix indentation from heredoc
+          sed -i 's/^          //' "$TMPDIR/README.md"
+
+          # Switch to main (create orphan if it doesn't exist)
+          if git ls-remote --exit-code --heads origin main > /dev/null 2>&1; then
+            git fetch origin main
+            git checkout main
+          else
+            git checkout --orphan main
+            git rm -rf .
+          fi
+
+          # Replace contents with chart only
+          git rm -rf . > /dev/null 2>&1 || true
+          cp -r "$TMPDIR"/* .
+          git add -A
+
+          # Check if there are changes
+          if git diff --cached --quiet; then
+            echo "No changes to chart, skipping commit."
+          else
+            SOURCE_SHA=$(git rev-parse source)
+            git commit -m "chore: regenerate chart from source@${SOURCE_SHA:0:7}"
+            git push origin main
+          fi
+
+          rm -rf "$TMPDIR"

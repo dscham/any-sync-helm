@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app.kubernetes.io/name: minio
+    app.kubernetes.io/instance: '{{ .Release.Name }}'
+    app.kubernetes.io/managed-by: '{{ .Release.Service }}'
+  name: minio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: minio
+      app.kubernetes.io/instance: '{{ .Release.Name }}'
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: minio
+        app.kubernetes.io/instance: '{{ .Release.Name }}'
+        app.kubernetes.io/managed-by: '{{ .Release.Service }}'
+    spec:
+      containers:
+      - args:
+        - server
+        - /data
+        - --console-address
+        - :9001
+        - --address
+        - :9000
+        env:
+        - name: MINIO_ROOT_PASSWORD
+          value: minio_secret_key
+        - name: MINIO_ROOT_USER
+          value: minio_access_key
+        image: '{{ .Values.minio.image.repository }}:{{ .Values.minio.image.tag }}'
+        livenessProbe:
+          exec:
+            command:
+            - bash -c ':> /dev/tcp/127.0.0.1/9000' || exit 1
+          failureThreshold: 3
+          periodSeconds: 5
+          timeoutSeconds: 10
+        name: minio
+        ports:
+        - containerPort: 9001
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /data
+          name: minio-claim0
+      restartPolicy: Always
+  serviceName: minio
+  volumeClaimTemplates:
+  - metadata:
+      name: minio-claim0
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: '{{ .Values.minio.persistence.size }}'

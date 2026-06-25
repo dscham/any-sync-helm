@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: any-sync-coordinator-bootstrap
+  labels: &id001
+    app.kubernetes.io/name: any-sync-coordinator-bootstrap
+    app.kubernetes.io/instance: '{{ .Release.Name }}'
+    app.kubernetes.io/managed-by: '{{ .Release.Service }}'
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: '1'
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels: *id001
+    spec:
+      containers:
+      - args:
+        - /bin/any-sync-confapply
+        - -c
+        - /etc/any-sync-coordinator/config.yml
+        - -n
+        - /etc/any-sync-coordinator/network.yml
+        - -e
+        image: '{{ .Values.coordinatorBootstrap.image.repository }}:{{ .Values.coordinatorBootstrap.image.tag }}'
+        name: any-sync-coordinator-bootstrap
+        volumeMounts:
+        - mountPath: /etc/any-sync-coordinator
+          name: any-sync-coordinator-bootstrap-claim0
+      restartPolicy: OnFailure
+      volumes:
+      - name: any-sync-coordinator-bootstrap-claim0
+        persistentVolumeClaim:
+          claimName: any-sync-coordinator-bootstrap-claim0

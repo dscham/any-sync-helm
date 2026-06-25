@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app.kubernetes.io/name: mongo-1
+    app.kubernetes.io/instance: '{{ .Release.Name }}'
+    app.kubernetes.io/managed-by: '{{ .Release.Service }}'
+  name: mongo-1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mongo-1
+      app.kubernetes.io/instance: '{{ .Release.Name }}'
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mongo-1
+        app.kubernetes.io/instance: '{{ .Release.Name }}'
+        app.kubernetes.io/managed-by: '{{ .Release.Service }}'
+    spec:
+      containers:
+      - args:
+        - --replSet
+        - rs0
+        - --port
+        - '27001'
+        image: '{{ .Values.mongo.image.repository }}:{{ .Values.mongo.image.tag }}'
+        livenessProbe:
+          exec:
+            command:
+            - test $(mongosh --port 27001 --quiet --eval "try {rs.initiate({_id:'rs0',members:[{_id:0,host:\"mongo-1:27001\"}]})} catch(e) {rs.status().ok}") -eq 1
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        name: mongo-1
+        ports:
+        - containerPort: 27001
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /data/db
+          name: mongo-1-claim0
+      restartPolicy: Always
+  serviceName: mongo-1
+  volumeClaimTemplates:
+  - metadata:
+      name: mongo-1-claim0
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: '{{ .Values.mongo.persistence.size }}'
