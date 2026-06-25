@@ -45,7 +45,27 @@ jobs:
           echo "$NEW_COMMITS"
 
           # Merge upstream changes into source
-          git merge upstream/main --no-edit -m "chore: sync upstream anyproto/any-sync-dockercompose"
+          # Use -X ours to auto-resolve conflicts in our favor (e.g. deleted upstream workflows)
+          if ! git merge upstream/main --no-edit -m "chore: sync upstream anyproto/any-sync-dockercompose"; then
+            echo "Merge conflict detected, resolving..."
+            # Accept our side for any conflicting files
+            git checkout --ours .
+            git add -A
+            git commit --no-edit -m "chore: sync upstream anyproto/any-sync-dockercompose (conflicts resolved)"
+          fi
+
+          # Remove upstream workflows we don't want (in case they were re-added by merge)
+          UNWANTED=".github/workflows/cla.yml .github/workflows/release.yml .github/workflows/telegram-notify.yml"
+          REMOVED=false
+          for f in $UNWANTED; do
+            if [ -f "$f" ]; then
+              git rm "$f"
+              REMOVED=true
+            fi
+          done
+          if [ "$REMOVED" = true ]; then
+            git commit -m "chore: re-remove upstream workflows after sync"
+          fi
 
       - name: Push updated source
         run: git push origin source
