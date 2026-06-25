@@ -8,9 +8,9 @@ metadata:
   name: any-sync-filenode
 spec:
   ports:
-  - name: '1005'
-    port: 1005
-    targetPort: 1005
+  - name: '{{ .Values.filenode.port }}'
+    port: '{{ .Values.filenode.port }}'
+    targetPort: '{{ .Values.filenode.port }}'
   - name: '1015'
     port: 1015
     protocol: UDP

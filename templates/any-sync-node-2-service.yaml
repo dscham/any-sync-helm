@@ -8,9 +8,9 @@ metadata:
   name: any-sync-node-2
 spec:
   ports:
-  - name: '1002'
-    port: 1002
-    targetPort: 1002
+  - name: '{{ .Values.syncNode2.port }}'
+    port: '{{ .Values.syncNode2.port }}'
+    targetPort: '{{ .Values.syncNode2.port }}'
   - name: '1012'
     port: 1012
     protocol: UDP

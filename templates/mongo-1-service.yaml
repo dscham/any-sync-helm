@@ -8,9 +8,9 @@ metadata:
   name: mongo-1
 spec:
   ports:
-  - name: '27001'
-    port: 27001
-    targetPort: 27001
+  - name: '{{ .Values.mongo.port }}'
+    port: '{{ .Values.mongo.port }}'
+    targetPort: '{{ .Values.mongo.port }}'
   selector:
     io.kompose.service: mongo-1
   clusterIP: None

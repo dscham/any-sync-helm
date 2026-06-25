@@ -25,7 +25,7 @@ spec:
       - image: '{{ .Values.consensusnode.image.repository }}:{{ .Values.consensusnode.image.tag }}'
         name: any-sync-consensusnode
         ports:
-        - containerPort: 1006
+        - containerPort: '{{ .Values.consensusnode.port }}'
           protocol: TCP
         - containerPort: 1016
           protocol: UDP

@@ -8,9 +8,9 @@ metadata:
   name: any-sync-consensusnode
 spec:
   ports:
-  - name: '1006'
-    port: 1006
-    targetPort: 1006
+  - name: '{{ .Values.consensusnode.port }}'
+    port: '{{ .Values.consensusnode.port }}'
+    targetPort: '{{ .Values.consensusnode.port }}'
   - name: '1016'
     port: 1016
     protocol: UDP

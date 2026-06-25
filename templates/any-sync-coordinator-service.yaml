@@ -8,9 +8,9 @@ metadata:
   name: any-sync-coordinator
 spec:
   ports:
-  - name: '1004'
-    port: 1004
-    targetPort: 1004
+  - name: '{{ .Values.coordinator.port }}'
+    port: '{{ .Values.coordinator.port }}'
+    targetPort: '{{ .Values.coordinator.port }}'
   - name: '1014'
     port: 1014
     protocol: UDP
