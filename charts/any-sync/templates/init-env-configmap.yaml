@@ -75,13 +75,13 @@ data:
     # MongoDB
     MONGO_1_PORT={{ .Values.mongo.port }}
     MONGO_CONNECT=mongodb://mongo-1:${MONGO_1_PORT}
-    MONGO_REPLICA_SET=rs0
+    MONGO_REPLICA_SET={{ .Values.mongo.replicaSet }}
 
     # Redis
     REDIS_HOST=redis
     REDIS_PORT={{ .Values.redis.port }}
     REDIS_URL="redis://${REDIS_HOST}:${REDIS_PORT}?dial_timeout=3&read_timeout=6s"
-    REDIS_MAXMEMORY=256mb
+    REDIS_MAXMEMORY={{ .Values.redis.maxMemory }}
 
     # MinIO
     AWS_ACCESS_KEY_ID={{ .Values.minio.accessKey }}

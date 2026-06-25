@@ -351,10 +351,6 @@ def generate_values(env_example_path):
             "bucket": "minio-bucket",
             "accessKey": "minio_access_key",
             "secretKey": "minio_secret_key",
-            "auth": {
-                "rootUser": "minio_access_key",
-                "rootPassword": "minio_secret_key",
-            },
             "persistence": {"size": "50Gi", "storageClass": ""},
         },
         "coordinator": {
