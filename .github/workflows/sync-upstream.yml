@@ -1,0 +1,51 @@
+name: Sync upstream
+
+on:
+  schedule:
+    # Check for upstream changes daily at 06:00 UTC
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source branch
+        uses: actions/checkout@v4
+        with:
+          ref: source
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch and merge upstream
+        run: |
+          git remote add upstream https://github.com/anyproto/any-sync-dockercompose.git
+          git fetch upstream main
+
+          # Check if there are new commits
+          LOCAL=$(git rev-parse HEAD)
+          # Find the merge base between our source and upstream/main
+          # Our source branch has extra commits on top of upstream, so we check
+          # if upstream/main has commits not in our branch
+          NEW_COMMITS=$(git log source..upstream/main --oneline 2>/dev/null | head -5)
+
+          if [ -z "$NEW_COMMITS" ]; then
+            echo "Already up to date with upstream."
+            exit 0
+          fi
+
+          echo "New upstream commits:"
+          echo "$NEW_COMMITS"
+
+          # Merge upstream changes into source
+          git merge upstream/main --no-edit -m "chore: sync upstream anyproto/any-sync-dockercompose"
+
+      - name: Push updated source
+        run: git push origin source
