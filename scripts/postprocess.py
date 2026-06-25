@@ -330,6 +330,8 @@ def make_headless_service(service_data):
 def generate_values(env_example_path):
     """Generate values.yaml from .env.example defaults."""
     values = {
+        # REQUIRED: set this to the external hostname or IP where clients connect
+        "externalHostname": "",
         "mongo": {
             "image": IMAGE_DEFAULTS["mongo"],
             "port": 27001,
@@ -347,6 +349,8 @@ def generate_values(env_example_path):
             "port": 9000,
             "webPort": 9001,
             "bucket": "minio-bucket",
+            "accessKey": "minio_access_key",
+            "secretKey": "minio_secret_key",
             "auth": {
                 "rootUser": "minio_access_key",
                 "rootPassword": "minio_secret_key",
@@ -357,6 +361,11 @@ def generate_values(env_example_path):
             "image": IMAGE_DEFAULTS["coordinator"],
             "port": 1004,
             "quicPort": 1014,
+            "limits": {
+                "spaceMembersRead": 1000,
+                "spaceMembersWrite": 1000,
+                "sharedSpacesLimit": 1000,
+            },
             "resources": {"limits": {"memory": "500M"}},
             "persistence": {"size": "1Gi", "storageClass": ""},
         },
@@ -542,7 +551,12 @@ def process(input_dir, output_dir, env_example_path):
         print(f"  Service: {out_name}")
 
     # --- Process ConfigMaps (pass through with cleanup) ---
+    # Skip any-sync-init: we have a hand-crafted templatized init-env-configmap.yaml
+    SKIP_CONFIGMAPS = {"any-sync-init"}
     for svc_name, cm in configmaps.items():
+        if svc_name in SKIP_CONFIGMAPS:
+            print(f"  ConfigMap: {svc_name} — skipped (hand-crafted template)")
+            continue
         clean_annotations(cm)
         # Keep kompose labels for configmaps as they link to services
         out_name = f"{svc_name}-configmap.yaml"
