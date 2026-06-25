@@ -25,7 +25,7 @@ spec:
       - image: '{{ .Values.syncNode1.image.repository }}:{{ .Values.syncNode1.image.tag }}'
         name: any-sync-node-1
         ports:
-        - containerPort: 1001
+        - containerPort: '{{ .Values.syncNode1.port }}'
           protocol: TCP
         - containerPort: 1011
           protocol: UDP

@@ -22,19 +22,20 @@ spec:
       containers:
       - args:
         - --replSet
-        - rs0
+        - '{{ .Values.mongo.replicaSet }}'
         - --port
-        - '27001'
+        - '{{ .Values.mongo.port }}'
         image: '{{ .Values.mongo.image.repository }}:{{ .Values.mongo.image.tag }}'
         livenessProbe:
           exec:
             command:
-            - test $(mongosh --port 27001 --quiet --eval "try {rs.initiate({_id:'rs0',members:[{_id:0,host:\"mongo-1:27001\"}]})} catch(e) {rs.status().ok}") -eq 1
+            - test $(mongosh --port {{ .Values.mongo.port }} --quiet --eval "try {rs.initiate({_id:'{{ .Values.mongo.replicaSet }}',members:[{_id:0,host:\"mongo-1:{{ .Values.mongo.port }}\"}]})} catch(e)
+              {rs.status().ok}") -eq 1
           initialDelaySeconds: 30
           periodSeconds: 10
         name: mongo-1
         ports:
-        - containerPort: 27001
+        - containerPort: '{{ .Values.mongo.port }}'
           protocol: TCP
         volumeMounts:
         - mountPath: /data/db

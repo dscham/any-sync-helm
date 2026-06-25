@@ -8,9 +8,9 @@ metadata:
   name: redis
 spec:
   ports:
-  - name: '6379'
-    port: 6379
-    targetPort: 6379
+  - name: '{{ .Values.redis.port }}'
+    port: '{{ .Values.redis.port }}'
+    targetPort: '{{ .Values.redis.port }}'
   selector:
     io.kompose.service: redis
   clusterIP: None

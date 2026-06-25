@@ -221,6 +221,80 @@ def templatize_resources(data, value_key):
             limits["memory"] = f'{{{{ .Values.{value_key}.resources.limits.memory }}}}'
 
 
+# Port and service-name values that need templatizing
+PORT_DEFAULTS = {
+    "mongo": 27001,
+    "redis": 6379,
+    "minio": 9000,
+    "coordinator": 1004,
+    "filenode": 1005,
+    "syncNode1": 1001,
+    "syncNode2": 1002,
+    "syncNode3": 1003,
+    "consensusnode": 1006,
+}
+
+
+def templatize_ports(data, value_key):
+    """Replace hardcoded port numbers in container specs with {{ .Values }} references."""
+    if value_key not in PORT_DEFAULTS:
+        return
+
+    default_port = PORT_DEFAULTS[value_key]
+    port_ref = f'{{{{ .Values.{value_key}.port }}}}'
+
+    # Templatize container ports and args
+    containers = (
+        data.get("spec", {})
+        .get("template", {})
+        .get("spec", {})
+        .get("containers", [])
+    )
+    for container in containers:
+        # Container ports
+        for port_entry in container.get("ports", []):
+            if port_entry.get("containerPort") == default_port:
+                port_entry["containerPort"] = port_ref
+
+        # Command args (e.g. mongo --port 27001)
+        args = container.get("args", [])
+        for i, arg in enumerate(args):
+            if arg == str(default_port):
+                args[i] = port_ref
+
+        # Mongo-specific: templatize replica set name and port in liveness probe
+        if value_key == "mongo":
+            rs_ref = '{{ .Values.mongo.replicaSet }}'
+            for arg_idx, arg in enumerate(args):
+                if arg == "rs0":
+                    args[arg_idx] = rs_ref
+
+            probe = container.get("livenessProbe", {}).get("exec", {})
+            cmd = probe.get("command", [])
+            for i, c in enumerate(cmd):
+                if isinstance(c, str) and "rs.initiate" in c:
+                    c = c.replace("27001", '{{ .Values.mongo.port }}')
+                    c = c.replace("rs0", '{{ .Values.mongo.replicaSet }}')
+                    cmd[i] = c
+
+
+def templatize_service_ports(data, value_key):
+    """Replace hardcoded port numbers in Service specs with {{ .Values }} references."""
+    if value_key not in PORT_DEFAULTS:
+        return
+
+    default_port = PORT_DEFAULTS[value_key]
+    port_ref = f'{{{{ .Values.{value_key}.port }}}}'
+
+    for port_entry in data.get("spec", {}).get("ports", []):
+        if port_entry.get("port") == default_port:
+            port_entry["port"] = port_ref
+        if port_entry.get("targetPort") == default_port:
+            port_entry["targetPort"] = port_ref
+        if port_entry.get("name") == str(default_port):
+            port_entry["name"] = port_ref
+
+
 # ---------------------------------------------------------------------------
 # Deployment → StatefulSet
 # ---------------------------------------------------------------------------
@@ -475,6 +549,7 @@ def process(input_dir, output_dir, env_example_path):
         clean_labels(dep)
         templatize_image(dep, value_key)
         templatize_resources(dep, value_key)
+        templatize_ports(dep, value_key)
 
         statefulset = convert_to_statefulset(dep, pvcs, svc_name, value_key)
         out_name = f"{svc_name}-statefulset.yaml"
@@ -487,6 +562,7 @@ def process(input_dir, output_dir, env_example_path):
             clean_annotations(svc_data)
             clean_labels(svc_data)
             make_headless_service(svc_data)
+            templatize_service_ports(svc_data, value_key)
             out_name = f"{svc_name}-service.yaml"
             dump_yaml(svc_data, os.path.join(templates_out, out_name))
             print(f"  Service (headless): {out_name}")
@@ -529,6 +605,7 @@ def process(input_dir, output_dir, env_example_path):
         clean_labels(dep)
         templatize_image(dep, value_key)
         templatize_resources(dep, value_key)
+        templatize_ports(dep, value_key)
 
         out_name = f"{svc_name}-deployment.yaml"
         dump_yaml(dep, os.path.join(templates_out, out_name))
@@ -541,6 +618,7 @@ def process(input_dir, output_dir, env_example_path):
 
         clean_annotations(svc_data)
         clean_labels(svc_data)
+        templatize_service_ports(svc_data, get_value_key(svc_name))
 
         out_name = f"{svc_name}-service.yaml"
         dump_yaml(svc_data, os.path.join(templates_out, out_name))

@@ -25,7 +25,7 @@ spec:
       - image: '{{ .Values.coordinator.image.repository }}:{{ .Values.coordinator.image.tag }}'
         name: any-sync-coordinator
         ports:
-        - containerPort: 1004
+        - containerPort: '{{ .Values.coordinator.port }}'
           protocol: TCP
         - containerPort: 1014
           protocol: UDP
