@@ -109,7 +109,7 @@ netcheck:
   enabled: true
 init:
   image:
-    repository: any-sync-init
+    repository: ghcr.io/anyproto/any-sync-tools
     tag: latest
 coordinatorBootstrap:
   image:
