@@ -76,9 +76,9 @@ spec:
                 NODE_PORT={{ index $.Values $svc "nodePort" }}
                 QUIC_INT={{ index $.Values $svc "quicPort" }}
                 QUIC_NODE={{ index $.Values $svc "quicNodePort" }}
-                # Replace externalHostname:internalPort with externalHostname:nodePort
-                sed -i "s|${HOSTNAME}:${INT_PORT}|${HOSTNAME}:${NODE_PORT}|g" /code/etc/client.yml
-                sed -i "s|${HOSTNAME}:${QUIC_INT}|${HOSTNAME}:${QUIC_NODE}|g" /code/etc/client.yml
+                # Replace externalHostname:internalPort with externalHostname:nodePort in all configs
+                find /code/etc -name "*.yml" -type f -exec sed -i "s|${HOSTNAME}:${INT_PORT}|${HOSTNAME}:${NODE_PORT}|g" {} +
+                find /code/etc -name "*.yml" -type f -exec sed -i "s|${HOSTNAME}:${QUIC_INT}|${HOSTNAME}:${QUIC_NODE}|g" {} +
                 {{- end }}
                 echo "INFO: External addresses patched."
               fi

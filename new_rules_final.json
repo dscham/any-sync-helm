@@ -1,0 +1,117 @@
+{
+    "addRulesFirewallRules":  [
+                                  {
+                                      "action":  "accept",
+                                      "srcCidr":  {
+                                                      "ipv4":  [
+                                                                   "0.0.0.0/0"
+                                                               ],
+                                                      "ipv6":  [
+                                                                   "::/0"
+                                                               ]
+                                                  },
+                                      "displayName":  "AnySync TCP",
+                                      "destPorts":  [
+                                                        "30001",
+                                                        "30002",
+                                                        "30003",
+                                                        "30004",
+                                                        "30005",
+                                                        "30006"
+                                                    ],
+                                      "status":  "active",
+                                      "protocol":  "tcp"
+                                  },
+                                  {
+                                      "action":  "accept",
+                                      "srcCidr":  {
+                                                      "ipv4":  [
+                                                                   "0.0.0.0/0"
+                                                               ],
+                                                      "ipv6":  [
+                                                                   "::/0"
+                                                               ]
+                                                  },
+                                      "displayName":  "AnySync UDP",
+                                      "destPorts":  [
+                                                        "30011",
+                                                        "30012",
+                                                        "30013",
+                                                        "30014",
+                                                        "30015",
+                                                        "30016"
+                                                    ],
+                                      "status":  "active",
+                                      "protocol":  "udp"
+                                  },
+                                  {
+                                      "action":  "accept",
+                                      "srcCidr":  {
+                                                      "ipv4":  [
+                                                                   "0.0.0.0/0"
+                                                               ],
+                                                      "ipv6":  [
+                                                                   "::/0"
+                                                               ]
+                                                  },
+                                      "displayName":  "WG UDP",
+                                      "destPorts":  [
+                                                        "51820"
+                                                    ],
+                                      "status":  "active",
+                                      "protocol":  "udp"
+                                  },
+                                  {
+                                      "action":  "accept",
+                                      "srcCidr":  {
+                                                      "ipv4":  [
+                                                                   "0.0.0.0/0"
+                                                               ],
+                                                      "ipv6":  [
+                                                                   "::/0"
+                                                               ]
+                                                  },
+                                      "displayName":  "WG TCP",
+                                      "destPorts":  [
+                                                        "51820"
+                                                    ],
+                                      "status":  "active",
+                                      "protocol":  "tcp"
+                                  },
+                                  {
+                                      "action":  "accept",
+                                      "srcCidr":  {
+                                                      "ipv4":  [
+                                                                   "0.0.0.0/0"
+                                                               ],
+                                                      "ipv6":  [
+                                                                   "::/0"
+                                                               ]
+                                                  },
+                                      "displayName":  "Web",
+                                      "destPorts":  [
+                                                        "80",
+                                                        "443"
+                                                    ],
+                                      "status":  "active",
+                                      "protocol":  "tcp"
+                                  },
+                                  {
+                                      "action":  "drop",
+                                      "srcCidr":  {
+                                                      "ipv4":  [
+
+                                                               ],
+                                                      "ipv6":  [
+
+                                                               ]
+                                                  },
+                                      "displayName":  "Block all traffic",
+                                      "destPorts":  [
+
+                                                    ],
+                                      "status":  "active",
+                                      "protocol":  ""
+                                  }
+                              ]
+}
