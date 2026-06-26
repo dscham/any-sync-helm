@@ -12,5 +12,6 @@ spec:
     port: {{ .Values.mongo.port }}
     targetPort: {{ .Values.mongo.port }}
   selector:
-    io.kompose.service: mongo-1
+    app.kubernetes.io/name: mongo-1
+    app.kubernetes.io/instance: '{{ .Release.Name }}'
   clusterIP: None

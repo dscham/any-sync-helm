@@ -21,5 +21,6 @@ spec:
     port: 8004
     targetPort: 8000
   selector:
-    io.kompose.service: any-sync-coordinator
+    app.kubernetes.io/name: any-sync-coordinator
+    app.kubernetes.io/instance: '{{ .Release.Name }}'
   type: NodePort

@@ -12,5 +12,6 @@ spec:
     port: {{ .Values.redis.port }}
     targetPort: {{ .Values.redis.port }}
   selector:
-    io.kompose.service: redis
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/instance: '{{ .Release.Name }}'
   clusterIP: None

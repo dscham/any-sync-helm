@@ -21,5 +21,6 @@ spec:
     port: 8005
     targetPort: 8000
   selector:
-    io.kompose.service: any-sync-filenode
+    app.kubernetes.io/name: any-sync-filenode
+    app.kubernetes.io/instance: '{{ .Release.Name }}'
   type: NodePort

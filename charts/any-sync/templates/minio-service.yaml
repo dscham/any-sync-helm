@@ -12,5 +12,6 @@ spec:
     port: 9001
     targetPort: 9001
   selector:
-    io.kompose.service: minio
+    app.kubernetes.io/name: minio
+    app.kubernetes.io/instance: '{{ .Release.Name }}'
   clusterIP: None
