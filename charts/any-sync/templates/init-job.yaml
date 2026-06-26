@@ -41,7 +41,15 @@ spec:
               curl -sL "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${ARCH}" \
                 -o /usr/local/bin/yq
               chmod +x /usr/local/bin/yq
+              curl -sL "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/${ARCH}/kubectl" \
+                -o /usr/local/bin/kubectl
+              chmod +x /usr/local/bin/kubectl
               echo "INFO: Dependencies installed."
+
+              if kubectl get secret {{ include "any-sync.fullname" . }}-network-configs >/dev/null 2>&1; then
+                echo "INFO: Network configs already exist in Secret. Skipping generation to avoid overwriting!"
+                exit 0
+              fi
 
               # Copy scripts from ConfigMap to working directory
               mkdir -p /code/docker-generateconfig
@@ -96,6 +104,11 @@ spec:
             - /bin/sh
             - -c
             - |
+              if kubectl get secret {{ include "any-sync.fullname" . }}-network-configs >/dev/null 2>&1; then
+                echo "INFO: Network configs already exist in Secret. Skipping secret creation."
+                exit 0
+              fi
+
               echo "INFO: Storing generated configuration into Secret..."
               
               # Flatten the configs for easier secret projection
