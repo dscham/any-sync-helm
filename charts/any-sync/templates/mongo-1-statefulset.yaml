@@ -29,8 +29,9 @@ spec:
         livenessProbe:
           exec:
             command:
-            - test $(mongosh --port {{ .Values.mongo.port }} --quiet --eval "try {rs.initiate({_id:'{{ .Values.mongo.replicaSet }}',members:[{_id:0,host:\"mongo-1:{{ .Values.mongo.port }}\"}]})} catch(e)
-              {rs.status().ok}") -eq 1
+            - /bin/sh
+            - -c
+            - test $(mongosh --port {{ .Values.mongo.port }} --quiet --eval "try {rs.initiate({_id:'{{ .Values.mongo.replicaSet }}',members:[{_id:0,host:\"mongo-1:{{ .Values.mongo.port }}\"}]})} catch(e) {rs.status().ok}") -eq 1
           initialDelaySeconds: 30
           periodSeconds: 10
         name: mongo-1

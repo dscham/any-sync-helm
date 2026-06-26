@@ -27,10 +27,14 @@ spec:
         image: '{{ .Values.coordinatorBootstrap.image.repository }}:{{ .Values.coordinatorBootstrap.image.tag }}'
         name: any-sync-coordinator-bootstrap
         volumeMounts:
-        - mountPath: /etc/any-sync-coordinator
-          name: any-sync-coordinator-bootstrap-claim0
+        - mountPath: /etc/any-sync-coordinator/config.yml
+          name: network-configs
+          subPath: coordinator.yml
+        - name: network-configs
+          mountPath: /etc/any-sync-coordinator/network.yml
+          subPath: network.yml
       restartPolicy: OnFailure
       volumes:
-      - name: any-sync-coordinator-bootstrap-claim0
-        persistentVolumeClaim:
-          claimName: any-sync-coordinator-bootstrap-claim0
+      - name: network-configs
+        secret:
+          secretName: '{{ include "any-sync.fullname" . }}-network-configs'
