@@ -41,13 +41,13 @@ data:
 
     yamux:
         listenAddrs:
-            - %ANY_SYNC_COORDINATOR_ADDRESSES%
+            - 0.0.0.0:%ANY_SYNC_COORDINATOR_PORT%
         writeTimeoutSec: 10
         dialTimeoutSec: 10
 
     quic:
         listenAddrs:
-            - %ANY_SYNC_COORDINATOR_QUIC_ADDRESSES%
+            - 0.0.0.0:%ANY_SYNC_COORDINATOR_QUIC_PORT%
         writeTimeoutSec: 10
         dialTimeoutSec: 10
 
@@ -77,13 +77,13 @@ data:
 
     yamux:
         listenAddrs:
-            - %ANY_SYNC_FILENODE_ADDRESSES%
+            - 0.0.0.0:%ANY_SYNC_FILENODE_PORT%
         writeTimeoutSec: 10
         dialTimeoutSec: 10
 
     quic:
         listenAddrs:
-            - %ANY_SYNC_FILENODE_QUIC_ADDRESSES%
+            - 0.0.0.0:%ANY_SYNC_FILENODE_QUIC_PORT%
         writeTimeoutSec: 10
         dialTimeoutSec: 10
 
@@ -102,13 +102,13 @@ data:
 
     yamux:
         listenAddrs:
-            - %ANY_SYNC_CONSENSUSNODE_ADDRESSES%
+            - 0.0.0.0:%ANY_SYNC_CONSENSUSNODE_PORT%
         writeTimeoutSec: 10
         dialTimeoutSec: 10
 
     quic:
         listenAddrs:
-            - %ANY_SYNC_CONSENSUSNODE_QUIC_ADDRESSES%
+            - 0.0.0.0:%ANY_SYNC_CONSENSUSNODE_QUIC_PORT%
         writeTimeoutSec: 10
         dialTimeoutSec: 10
 
@@ -123,12 +123,12 @@ data:
 
     yamux:
         listenAddrs:
-            - %ANY_SYNC_NODE_1_ADDRESSES%
+            - 0.0.0.0:%ANY_SYNC_NODE_1_PORT%
         writeTimeoutSec: 10
         dialTimeoutSec: 10
     quic:
         listenAddrs:
-            - %ANY_SYNC_NODE_1_QUIC_ADDRESSES%
+            - 0.0.0.0:%ANY_SYNC_NODE_1_QUIC_PORT%
         writeTimeoutSec: 10
         dialTimeoutSec: 10
 
@@ -168,12 +168,12 @@ data:
 
     yamux:
         listenAddrs:
-            - %ANY_SYNC_NODE_2_ADDRESSES%
+            - 0.0.0.0:%ANY_SYNC_NODE_2_PORT%
         writeTimeoutSec: 10
         dialTimeoutSec: 10
     quic:
         listenAddrs:
-            - %ANY_SYNC_NODE_2_QUIC_ADDRESSES%
+            - 0.0.0.0:%ANY_SYNC_NODE_2_QUIC_PORT%
         writeTimeoutSec: 10
         dialTimeoutSec: 10
 
@@ -213,12 +213,12 @@ data:
 
     yamux:
         listenAddrs:
-            - %ANY_SYNC_NODE_3_ADDRESSES%
+            - 0.0.0.0:%ANY_SYNC_NODE_3_PORT%
         writeTimeoutSec: 10
         dialTimeoutSec: 10
     quic:
         listenAddrs:
-            - %ANY_SYNC_NODE_3_QUIC_ADDRESSES%
+            - 0.0.0.0:%ANY_SYNC_NODE_3_QUIC_PORT%
         writeTimeoutSec: 10
         dialTimeoutSec: 10
 
