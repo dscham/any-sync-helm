@@ -8,11 +8,11 @@ metadata:
   name: any-sync-node-3
 spec:
   ports:
-  - name: syncNode3-tcp
+  - name: syncnode3-tcp
     port: {{ .Values.syncNode3.port }}
     targetPort: {{ .Values.syncNode3.port }}
     nodePort: {{ .Values.syncNode3.nodePort }}
-  - name: syncNode3-quic
+  - name: syncnode3-quic
     port: {{ .Values.syncNode3.quicPort }}
     protocol: UDP
     targetPort: {{ .Values.syncNode3.quicPort }}
