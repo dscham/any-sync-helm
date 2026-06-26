@@ -1,1 +1,60 @@
-{     "apiVersion": "v1",     "kind": "Namespace",     "metadata": {         "annotations": {             "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Namespace\",\"metadata\":{\"annotations\":{},\"creationTimestamp\":null,\"name\":\"anytype-sync\"},\"spec\":{},\"status\":{}}\n"         },         "creationTimestamp": "2026-06-26T12:41:57Z",         "deletionTimestamp": "2026-06-26T13:23:32Z",         "labels": {             "kubernetes.io/metadata.name": "anytype-sync"         },         "name": "anytype-sync",         "resourceVersion": "32485400",         "uid": "41c9ebb0-221b-42de-b49b-573b3797d643"     },     "spec": {         "finalizers": [             "kubernetes"         ]     },     "status": {         "conditions": [             {                 "lastTransitionTime": "2026-06-26T13:23:38Z",                 "message": "All resources successfully discovered",                 "reason": "ResourcesDiscovered",                 "status": "False",                 "type": "NamespaceDeletionDiscoveryFailure"             },             {                 "lastTransitionTime": "2026-06-26T13:23:38Z",                 "message": "All legacy kube types successfully parsed",                 "reason": "ParsedGroupVersions",                 "status": "False",                 "type": "NamespaceDeletionGroupVersionParsingFailure"             },             {                 "lastTransitionTime": "2026-06-26T13:23:38Z",                 "message": "All content successfully deleted, may be waiting on finalization",                 "reason": "ContentDeleted",                 "status": "False",                 "type": "NamespaceDeletionContentFailure"             },             {                 "lastTransitionTime": "2026-06-26T13:23:38Z",                 "message": "All content successfully removed",                 "reason": "ContentRemoved",                 "status": "False",                 "type": "NamespaceContentRemaining"             },             {                 "lastTransitionTime": "2026-06-26T13:23:38Z",                 "message": "All content-preserving finalizers finished",                 "reason": "ContentHasNoFinalizers",                 "status": "False",                 "type": "NamespaceFinalizersRemaining"             }         ],         "phase": "Terminating"     } }
+{
+    "apiVersion":  "v1",
+    "kind":  "Namespace",
+    "metadata":  {
+                     "creationTimestamp":  "2026-06-26T13:29:16Z",
+                     "deletionTimestamp":  "2026-06-26T14:00:47Z",
+                     "labels":  {
+                                    "kubernetes.io/metadata.name":  "anytype-sync",
+                                    "name":  "anytype-sync"
+                                },
+                     "name":  "anytype-sync",
+                     "resourceVersion":  "32491200",
+                     "uid":  "9412973d-afad-47ca-81d9-6db2641bd735"
+                 },
+    "spec":  {
+                 "finalizers":  [
+
+                                ]
+             },
+    "status":  {
+                   "conditions":  [
+                                      {
+                                          "lastTransitionTime":  "2026-06-26T14:01:03Z",
+                                          "message":  "All resources successfully discovered",
+                                          "reason":  "ResourcesDiscovered",
+                                          "status":  "False",
+                                          "type":  "NamespaceDeletionDiscoveryFailure"
+                                      },
+                                      {
+                                          "lastTransitionTime":  "2026-06-26T14:01:03Z",
+                                          "message":  "All legacy kube types successfully parsed",
+                                          "reason":  "ParsedGroupVersions",
+                                          "status":  "False",
+                                          "type":  "NamespaceDeletionGroupVersionParsingFailure"
+                                      },
+                                      {
+                                          "lastTransitionTime":  "2026-06-26T14:01:29Z",
+                                          "message":  "Failed to delete all resource types, 1 remaining: unexpected items still remain in namespace: anytype-sync for gvr: /v1, Resource=pods",
+                                          "reason":  "ContentDeletionFailed",
+                                          "status":  "True",
+                                          "type":  "NamespaceDeletionContentFailure"
+                                      },
+                                      {
+                                          "lastTransitionTime":  "2026-06-26T14:01:03Z",
+                                          "message":  "All content successfully removed",
+                                          "reason":  "ContentRemoved",
+                                          "status":  "False",
+                                          "type":  "NamespaceContentRemaining"
+                                      },
+                                      {
+                                          "lastTransitionTime":  "2026-06-26T14:01:03Z",
+                                          "message":  "All content-preserving finalizers finished",
+                                          "reason":  "ContentHasNoFinalizers",
+                                          "status":  "False",
+                                          "type":  "NamespaceFinalizersRemaining"
+                                      }
+                                  ],
+                   "phase":  "Terminating"
+               }
+}

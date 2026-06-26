@@ -36,6 +36,7 @@ services:
     healthcheck:
       test: test $$(mongosh --port ${MONGO_1_PORT} --quiet --eval "try {rs.initiate({_id:'${MONGO_REPLICA_SET}',members:[{_id:0,host:\"mongo-1:${MONGO_1_PORT}\"}]})} catch(e) {rs.status().ok}") -eq 1
       interval: 10s
+      timeout: 10s
       start_period: 30s
     ports:
       - "127.0.0.1:${MONGO_1_PORT}:${MONGO_1_PORT}"
