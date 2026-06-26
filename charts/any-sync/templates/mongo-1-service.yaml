@@ -9,8 +9,8 @@ metadata:
 spec:
   ports:
   - name: mongo-tcp
-    port: '{{ .Values.mongo.port }}'
-    targetPort: '{{ .Values.mongo.port }}'
+    port: {{ .Values.mongo.port }}
+    targetPort: {{ .Values.mongo.port }}
   selector:
     io.kompose.service: mongo-1
   clusterIP: None

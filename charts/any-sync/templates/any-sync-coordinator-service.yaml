@@ -9,14 +9,14 @@ metadata:
 spec:
   ports:
   - name: coordinator-tcp
-    port: '{{ .Values.coordinator.port }}'
-    targetPort: '{{ .Values.coordinator.port }}'
-    nodePort: '{{ .Values.coordinator.nodePort }}'
+    port: {{ .Values.coordinator.port }}
+    targetPort: {{ .Values.coordinator.port }}
+    nodePort: {{ .Values.coordinator.nodePort }}
   - name: coordinator-quic
-    port: '{{ .Values.coordinator.quicPort }}'
+    port: {{ .Values.coordinator.quicPort }}
     protocol: UDP
-    targetPort: '{{ .Values.coordinator.quicPort }}'
-    nodePort: '{{ .Values.coordinator.quicNodePort }}'
+    targetPort: {{ .Values.coordinator.quicPort }}
+    nodePort: {{ .Values.coordinator.quicNodePort }}
   - name: '8004'
     port: 8004
     targetPort: 8000

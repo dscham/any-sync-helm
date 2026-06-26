@@ -9,14 +9,14 @@ metadata:
 spec:
   ports:
   - name: consensusnode-tcp
-    port: '{{ .Values.consensusnode.port }}'
-    targetPort: '{{ .Values.consensusnode.port }}'
-    nodePort: '{{ .Values.consensusnode.nodePort }}'
+    port: {{ .Values.consensusnode.port }}
+    targetPort: {{ .Values.consensusnode.port }}
+    nodePort: {{ .Values.consensusnode.nodePort }}
   - name: consensusnode-quic
-    port: '{{ .Values.consensusnode.quicPort }}'
+    port: {{ .Values.consensusnode.quicPort }}
     protocol: UDP
-    targetPort: '{{ .Values.consensusnode.quicPort }}'
-    nodePort: '{{ .Values.consensusnode.quicNodePort }}'
+    targetPort: {{ .Values.consensusnode.quicPort }}
+    nodePort: {{ .Values.consensusnode.quicNodePort }}
   - name: '8006'
     port: 8006
     targetPort: 8000

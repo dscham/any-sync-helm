@@ -9,14 +9,14 @@ metadata:
 spec:
   ports:
   - name: syncNode1-tcp
-    port: '{{ .Values.syncNode1.port }}'
-    targetPort: '{{ .Values.syncNode1.port }}'
-    nodePort: '{{ .Values.syncNode1.nodePort }}'
+    port: {{ .Values.syncNode1.port }}
+    targetPort: {{ .Values.syncNode1.port }}
+    nodePort: {{ .Values.syncNode1.nodePort }}
   - name: syncNode1-quic
-    port: '{{ .Values.syncNode1.quicPort }}'
+    port: {{ .Values.syncNode1.quicPort }}
     protocol: UDP
-    targetPort: '{{ .Values.syncNode1.quicPort }}'
-    nodePort: '{{ .Values.syncNode1.quicNodePort }}'
+    targetPort: {{ .Values.syncNode1.quicPort }}
+    nodePort: {{ .Values.syncNode1.quicNodePort }}
   - name: '8081'
     port: 8081
     targetPort: 8080

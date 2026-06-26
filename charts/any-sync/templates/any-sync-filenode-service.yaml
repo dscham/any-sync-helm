@@ -9,14 +9,14 @@ metadata:
 spec:
   ports:
   - name: filenode-tcp
-    port: '{{ .Values.filenode.port }}'
-    targetPort: '{{ .Values.filenode.port }}'
-    nodePort: '{{ .Values.filenode.nodePort }}'
+    port: {{ .Values.filenode.port }}
+    targetPort: {{ .Values.filenode.port }}
+    nodePort: {{ .Values.filenode.nodePort }}
   - name: filenode-quic
-    port: '{{ .Values.filenode.quicPort }}'
+    port: {{ .Values.filenode.quicPort }}
     protocol: UDP
-    targetPort: '{{ .Values.filenode.quicPort }}'
-    nodePort: '{{ .Values.filenode.quicNodePort }}'
+    targetPort: {{ .Values.filenode.quicPort }}
+    nodePort: {{ .Values.filenode.quicNodePort }}
   - name: '8005'
     port: 8005
     targetPort: 8000
