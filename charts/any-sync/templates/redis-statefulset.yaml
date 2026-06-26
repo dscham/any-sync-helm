@@ -51,7 +51,7 @@ spec:
           timeoutSeconds: 30
         name: redis
         ports:
-        - containerPort: '{{ .Values.redis.port }}'
+        - containerPort: {{ .Values.redis.port }}
           protocol: TCP
         volumeMounts:
         - mountPath: /data

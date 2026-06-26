@@ -25,9 +25,9 @@ spec:
       - image: '{{ .Values.syncNode3.image.repository }}:{{ .Values.syncNode3.image.tag }}'
         name: any-sync-node-3
         ports:
-        - containerPort: '{{ .Values.syncNode3.port }}'
+        - containerPort: {{ .Values.syncNode3.port }}
           protocol: TCP
-        - containerPort: '{{ .Values.syncNode3.quicPort }}'
+        - containerPort: {{ .Values.syncNode3.quicPort }}
           protocol: UDP
         - containerPort: 8080
           protocol: TCP

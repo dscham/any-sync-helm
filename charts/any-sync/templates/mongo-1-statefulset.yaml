@@ -35,7 +35,7 @@ spec:
           periodSeconds: 10
         name: mongo-1
         ports:
-        - containerPort: '{{ .Values.mongo.port }}'
+        - containerPort: {{ .Values.mongo.port }}
           protocol: TCP
         volumeMounts:
         - mountPath: /data/db

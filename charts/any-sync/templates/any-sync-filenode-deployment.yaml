@@ -25,9 +25,9 @@ spec:
       - image: '{{ .Values.filenode.image.repository }}:{{ .Values.filenode.image.tag }}'
         name: any-sync-filenode
         ports:
-        - containerPort: '{{ .Values.filenode.port }}'
+        - containerPort: {{ .Values.filenode.port }}
           protocol: TCP
-        - containerPort: '{{ .Values.filenode.quicPort }}'
+        - containerPort: {{ .Values.filenode.quicPort }}
           protocol: UDP
         - containerPort: 8000
           protocol: TCP
